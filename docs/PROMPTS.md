@@ -108,3 +108,33 @@ AI was used for initial analysis, architecture suggestions, threat modeling, and
 The initial Day 1 implementation is only project setup and documentation. Security protections and automated tests are not yet implemented.
 
 This log will be updated daily with dated entries, specific shortcomings, and links to commits containing corrections or improvements.
+
+## Day 2 — 2026-11-02
+
+### Prompt 5 — Authentication and Roles
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+I am building TrustVault for the Snovasys Fresher Hiring Challenge. For Day 2, help me implement authentication and role-based access control from scratch. I need user registration, login, logout, password hashing, and three roles: Administrator, Document Owner, and Viewer. New users should get the Viewer role by default. Protect the dashboards based on user roles and create tests to verify that users cannot access dashboards they are not authorized to use. I also want the login and registration pages to have a modern, attractive interface with a logo instead of a plain design.
+
+**What it produced:**
+- User model and password hashing
+- Registration, login, and logout routes
+- Role-protected dashboards
+- Login and registration interface
+- Automated authentication tests
+
+**What was wrong:**
+The initial test run failed because of the Python import path and template location. Two role access tests also failed because the role was updated after login.
+
+**What I did instead:**
+Fixed the Python import path, moved templates to the Flask app's template directory, and updated the tests to assign roles before login.
+
+**Validation:**
+8 authentication tests passed.
+
+**Security note:**
+New registrations receive the Viewer role. Secure administrator-managed role assignment and additional authentication hardening are still pending.
+
+**Commit:**
+Pending.

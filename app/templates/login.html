@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand">
+            <div class="logo">?</div>
+            Trust<span>Vault</span>
+        </div>
+        <a class="nav-link" href="{{ url_for('auth.register') }}">Create an account</a>
+    </nav>
+
+    <main class="auth-layout">
+        <section class="hero">
+            <h1>Security you can<br><span>trust.</span></h1>
+            <p>
+                Keep your files organized and share them only with the people
+                you choose. TrustVault puts document security first.
+            </p>
+            <div class="feature-list">
+                <div class="feature">?? Protected Documents</div>
+                <div class="feature">?? Controlled Sharing</div>
+                <div class="feature">?? Activity Tracking</div>
+            </div>
+        </section>
+
+        <section class="auth-card">
+            <h2>Welcome back</h2>
+            <p class="subtitle">Sign in to access your secure workspace.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <div class="flash">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input id="username" name="username" type="text"
+                           placeholder="Enter your username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password"
+                           placeholder="Enter your password" required>
+                </div>
+
+                <button class="btn-primary" type="submit">Sign In ?</button>
+            </form>
+
+            <div class="auth-footer">
+                New to TrustVault?
+                <a href="{{ url_for('auth.register') }}">Create an account</a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

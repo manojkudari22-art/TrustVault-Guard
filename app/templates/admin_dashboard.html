@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand"><div class="logo">?</div>Trust<span>Vault</span></div>
+        <a class="nav-link" href="{{ url_for('auth.dashboard') }}">? Dashboard</a>
+    </nav>
+
+    <main class="dashboard">
+        <section class="welcome">
+            <h1>Administrator Console ???</h1>
+            <p>Manage and monitor the TrustVault platform.</p>
+        </section>
+        <section class="stats">
+            <div class="stat">
+                <h3>ACCESS LEVEL</h3>
+                <p>Administrator</p>
+            </div>
+            <div class="stat">
+                <h3>SECURITY</h3>
+                <p>Full platform access</p>
+            </div>
+        </section>
+        <section class="actions">
+            <a class="action" href="{{ url_for('auth.dashboard') }}">Back to Dashboard</a>
+        </section>
+    </main>
+</body>
+</html>
