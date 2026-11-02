@@ -216,3 +216,42 @@ body {
         margin: auto;
     }
 }
+
+/* TrustVault Guard - Smooth form interactions */
+input,
+select,
+textarea,
+button,
+a {
+    pointer-events: auto;
+}
+
+input,
+select,
+textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: text;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+button,
+.btn,
+a {
+    transition: background-color 0.2s ease,
+                color 0.2s ease,
+                transform 0.2s ease;
+    touch-action: manipulation;
+}
+
+button:active,
+.btn:active {
+    transform: scale(0.98);
+}
+

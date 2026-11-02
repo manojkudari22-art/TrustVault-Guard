@@ -1,68 +1,302 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrustVault Guard | Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #eaf2ff;
+            background:
+                radial-gradient(ellipse at 75% 45%, #062b67 0%, transparent 42%),
+                linear-gradient(125deg, #020b1d, #031737 55%, #020b1d);
+            overflow-x: hidden;
+        }
+        .page {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 38px;
+            max-width: 1500px;
+            margin: auto;
+            padding: 48px 6%;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 650px;
+            margin: auto;
+            padding: 38px 42px 28px;
+            border: 1px solid #0757a9;
+            border-radius: 26px;
+            background: linear-gradient(145deg, rgba(5,26,58,.97), rgba(2,15,38,.96));
+            box-shadow: 0 0 45px rgba(0,91,255,.13), inset 0 0 25px rgba(0,87,255,.04);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 8px;
+        }
+        .brand-icon {
+            width: 66px;
+            height: 66px;
+            color: #168bff;
+            filter: drop-shadow(0 0 8px #087dff99);
+            flex-shrink: 0;
+        }
+        .brand-name {
+            font-size: clamp(27px, 3vw, 42px);
+            font-weight: 750;
+            letter-spacing: -.8px;
+            color: #f4f8ff;
+        }
+        .brand-name span { color: #258cff; }
+        .subtitle {
+            text-align: center;
+            color: #b9cce9;
+            margin: 12px 0 34px;
+            font-size: 16px;
+        }
+        .field { margin-bottom: 22px; }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 650;
+            color: #e4edff;
+        }
+        .input-wrap { position: relative; }
+        .input-icon {
+            position: absolute;
+            left: 17px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #83a9dd;
+            width: 21px;
+            height: 21px;
+            pointer-events: none;
+        }
+        input {
+            width: 100%;
+            height: 58px;
+            border: 1px solid #29466f;
+            border-radius: 14px;
+            outline: none;
+            background: #06152c;
+            color: #f1f6ff;
+            padding: 0 18px 0 56px;
+            font-size: 16px;
+            transition: border .2s, box-shadow .2s;
+        }
+        input::placeholder { color: #7e91ad; }
+        input:focus {
+            border-color: #168bff;
+            box-shadow: 0 0 0 3px #168bff25;
+        }
+        .submit-btn {
+            width: 100%;
+            height: 60px;
+            margin-top: 2px;
+            border: 0;
+            border-radius: 14px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(100deg, #238dff, #1455f5);
+            box-shadow: 0 8px 24px #075dff30;
+            transition: transform .2s, filter .2s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); filter: brightness(1.12); }
+        .register-link {
+            text-align: center;
+            color: #a9bddb;
+            margin: 25px 0 30px;
+            font-size: 14px;
+        }
+        .register-link a { color: #3b9cff; text-decoration: none; font-weight: 700; }
+        .register-link a:hover { text-decoration: underline; }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-top: 1px solid #19385f;
+            padding-top: 22px;
+        }
+        .feature {
+            text-align: center;
+            color: #c0d0e9;
+            font-size: 13px;
+            padding: 0 10px;
+        }
+        .feature + .feature { border-left: 1px solid #19385f; }
+        .feature svg {
+            width: 30px;
+            height: 30px;
+            display: block;
+            margin: 0 auto 10px;
+            color: #168bff;
+        }
+        .flash {
+            background: #451c2b;
+            border: 1px solid #a53c5a;
+            color: #ffdce5;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+        .hero svg {
+            width: 100%;
+            max-width: 610px;
+            height: auto;
+            filter: drop-shadow(0 0 30px #006aff24);
+        }
+        @media (max-width: 900px) {
+            .page { grid-template-columns: 1fr; padding: 28px 18px; }
+            .login-card { max-width: 600px; padding: 30px 24px 24px; }
+            .hero { display: none; }
+        }
+        @media (max-width: 480px) {
+            .brand { gap: 10px; }
+            .brand-icon { width: 48px; height: 48px; }
+            .brand-name { font-size: 27px; }
+            .subtitle { font-size: 14px; }
+            .feature { font-size: 11px; padding: 0 4px; }
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="brand">
-            <div class="logo">?</div>
-            Trust<span>Vault</span>
-        </div>
-        <a class="nav-link" href="{{ url_for('auth.register') }}">Create an account</a>
-    </nav>
-
-    <main class="auth-layout">
-        <section class="hero">
-            <h1>Security you can<br><span>trust.</span></h1>
-            <p>
-                Keep your files organized and share them only with the people
-                you choose. TrustVault Guard puts document security first.
-            </p>
-            <div class="feature-list">
-                <div class="feature">?? Protected Documents</div>
-                <div class="feature">?? Controlled Sharing</div>
-                <div class="feature">?? Activity Tracking</div>
+    <main class="page">
+        <section class="login-card">
+            <div class="brand">
+                <svg class="brand-icon" viewBox="0 0 64 64" fill="none" aria-label="Locker logo">
+                    <defs>
+                        <linearGradient id="logoBlue" x1="8" y1="4" x2="56" y2="60">
+                            <stop stop-color="#69c5ff"/>
+                            <stop offset="1" stop-color="#0863ff"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M17 27V19a15 15 0 0 1 30 0v8" stroke="url(#logoBlue)" stroke-width="6" stroke-linecap="round"/>
+                    <rect x="9" y="25" width="46" height="34" rx="8" fill="url(#logoBlue)" stroke="#65bdff" stroke-width="2"/>
+                    <circle cx="32" cy="40" r="5" fill="#06234d"/>
+                    <path d="M32 44v6" stroke="#06234d" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <div class="brand-name">TrustVault <span>Guard</span></div>
             </div>
-        </section>
 
-        <section class="auth-card">
-            <h2>Welcome back</h2>
             <p class="subtitle">Sign in to access your secure workspace.</p>
 
             {% with messages = get_flashed_messages() %}
-                {% for message in messages %}
-                    <div class="flash">{{ message }}</div>
-                {% endfor %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="flash">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
             {% endwith %}
 
-            <form method="POST">
+            <form method="POST" action="{{ url_for('auth.login') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input id="username" name="username" type="text"
-                           placeholder="Enter your username" required>
+                <div class="field">
+                    <label for="username">Username or Email</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.2 0-8 2.1-8 5v2h16v-2c0-2.9-3.8-5-8-5Z"/>
+                        </svg>
+                        <input id="username" name="username" type="text" placeholder="Enter username or email" autocomplete="username" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
+                <div class="field">
                     <label for="password">Password</label>
-                    <input id="password" name="password" type="password"
-                           placeholder="Enter your password" required>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2ZM10 7a2 2 0 0 1 4 0v2h-4Zm2 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/>
+                        </svg>
+                        <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+                    </div>
                 </div>
 
-                <button class="btn-primary" type="submit">Sign In ?</button>
+                <button class="submit-btn" type="submit">Sign In</button>
             </form>
 
-            <div class="auth-footer">
+            <div class="register-link">
                 New to TrustVault Guard?
                 <a href="{{ url_for('auth.register') }}">Create an account</a>
             </div>
+
+            <div class="features">
+                <div class="feature">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3Z"/>
+                        <path d="m8 12 2.5 2.5L16 9"/>
+                    </svg>
+                    Protected<br>Documents
+                </div>
+                <div class="feature">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/>
+                    </svg>
+                    Controlled<br>Sharing
+                </div>
+                <div class="feature">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M3 20V12h4v8M10 20V7h4v13M17 20V3h4v17"/>
+                    </svg>
+                    Activity<br>Tracking
+                </div>
+            </div>
+        </section>
+
+        <section class="hero" aria-label="Secure locker illustration">
+            <svg viewBox="0 0 600 570" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="lockBody" x1="180" y1="190" x2="410" y2="430" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#55baff"/><stop offset=".5" stop-color="#147aff"/><stop offset="1" stop-color="#0636b8"/>
+                    </linearGradient>
+                    <linearGradient id="lockShackle" x1="230" y1="60" x2="370" y2="220" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#9ce5ff"/><stop offset=".5" stop-color="#238eff"/><stop offset="1" stop-color="#0750d5"/>
+                    </linearGradient>
+                    <linearGradient id="shield" x1="340" y1="315" x2="465" y2="455" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#64d1ff"/><stop offset="1" stop-color="#0755e9"/>
+                    </linearGradient>
+                    <filter id="glow"><feGaussianBlur stdDeviation="7" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <g opacity=".55" stroke="#087cff" fill="none">
+                    <ellipse cx="300" cy="300" rx="245" ry="95" transform="rotate(-18 300 300)" stroke-width="1.5"/>
+                    <ellipse cx="300" cy="300" rx="245" ry="95" transform="rotate(25 300 300)" stroke-width="1.5"/>
+                    <circle cx="85" cy="330" r="6" fill="#44c5ff" filter="url(#glow)"/>
+                    <circle cx="512" cy="238" r="6" fill="#44c5ff" filter="url(#glow)"/>
+                    <circle cx="430" cy="430" r="5" fill="#44c5ff" filter="url(#glow)"/>
+                </g>
+                <path d="M130 440 300 395 485 440 300 490Z" fill="#063caa" stroke="#168bff" stroke-width="2"/>
+                <path d="M130 440 300 490 300 520 130 470Z" fill="#052568"/>
+                <path d="M300 490 485 440 485 470 300 520Z" fill="#031b57"/>
+                <path d="M215 230v-94a85 85 0 0 1 170 0v94" fill="none" stroke="#063fba" stroke-width="48" stroke-linecap="round"/>
+                <path d="M215 230v-94a85 85 0 0 1 170 0v94" fill="none" stroke="url(#lockShackle)" stroke-width="35" stroke-linecap="round"/>
+                <rect x="150" y="205" width="300" height="245" rx="38" fill="#073aab" stroke="#5ec7ff" stroke-width="3"/>
+                <rect x="162" y="217" width="276" height="220" rx="30" fill="url(#lockBody)"/>
+                <path d="M162 246q0-29 30-29h216q30 0 30 29v20H162Z" fill="#67c9ff" opacity=".3"/>
+                <circle cx="300" cy="310" r="44" fill="#04235f"/>
+                <path d="M282 337h36l-8 61h-20Z" fill="#04235f"/>
+                <path d="M395 335 475 365v57c0 45-33 76-80 100-47-24-80-55-80-100v-57Z" fill="url(#shield)" stroke="#80ddff" stroke-width="5"/>
+                <path d="m355 420 27 27 55-60" fill="none" stroke="#e6f8ff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+                <ellipse cx="300" cy="520" rx="170" ry="15" fill="#087dff" opacity=".3" filter="url(#glow)"/>
+            </svg>
         </section>
     </main>
 </body>
 </html>
-
