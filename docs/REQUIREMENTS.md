@@ -1,4 +1,4 @@
-# TrustVault Requirements
+﻿# TrustVault Guard Requirements
 
 ## Functional Requirements
 1. Users can register and log in.
@@ -18,3 +18,4 @@
 5. Permission revocation must take effect immediately.
 6. Audit logs must be tamper-evident.
 7. Security tests must verify unauthorized access is blocked.
+

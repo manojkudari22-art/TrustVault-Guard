@@ -1,4 +1,4 @@
-# TrustVault Architecture
+﻿# TrustVault Guard Architecture
 
 ## Technology Stack
 - Backend: Python Flask
@@ -31,3 +31,4 @@
 - Private file storage
 - Permission checks on every document request
 - Tamper-evident audit trail
+

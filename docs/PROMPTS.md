@@ -1,7 +1,7 @@
 ﻿# AI Prompts Log
 
 ## Project
-TrustVault — Secure Document Sharing with a Real Audit Trail
+TrustVault Guard — Secure Document Sharing with a Real Audit Trail
 
 ## Day 1 — 2026-11-01
 
@@ -10,7 +10,7 @@ TrustVault — Secure Document Sharing with a Real Audit Trail
 **Tool:** ChatGPT
 
 **Prompt / Summary:**
-Analyze the Snovasys TrustVault challenge problem statement. Identify the core problem, functional requirements, security requirements, user roles, and expected deliverables.
+Analyze the Snovasys TrustVault Guard challenge problem statement. Identify the core problem, functional requirements, security requirements, user roles, and expected deliverables.
 
 **What it produced:**
 - Initial problem statement
@@ -34,7 +34,7 @@ Pending — will link the commit after updating the threat model and tests.
 **Tool:** ChatGPT
 
 **Prompt / Summary:**
-Suggest a beginner-friendly Flask architecture for TrustVault using SQLite, authentication, role-based access control, private document storage, document permissions, and audit logging.
+Suggest a beginner-friendly Flask architecture for TrustVault Guard using SQLite, authentication, role-based access control, private document storage, document permissions, and audit logging.
 
 **What it produced:**
 - Suggested technology stack
@@ -82,7 +82,7 @@ Pending — will link the commit after the threat model and corresponding tests 
 **Tool:** ChatGPT
 
 **Prompt / Summary:**
-Provide a step-by-step Flask project setup for TrustVault, including a virtual environment, dependencies, application factory, configuration, and a basic route.
+Provide a step-by-step Flask project setup for TrustVault Guard, including a virtual environment, dependencies, application factory, configuration, and a basic route.
 
 **What it produced:**
 - Initial project folder structure
@@ -115,7 +115,7 @@ This log will be updated daily with dated entries, specific shortcomings, and li
 **Tool:** ChatGPT
 
 **Prompt / Summary:**
-I am building TrustVault for the Snovasys Fresher Hiring Challenge. For Day 2, help me implement authentication and role-based access control from scratch. I need user registration, login, logout, password hashing, and three roles: Administrator, Document Owner, and Viewer. New users should get the Viewer role by default. Protect the dashboards based on user roles and create tests to verify that users cannot access dashboards they are not authorized to use. I also want the login and registration pages to have a modern, attractive interface with a logo instead of a plain design.
+I am building TrustVault Guard for the Snovasys Fresher Hiring Challenge. For Day 2, help me implement authentication and role-based access control from scratch. I need user registration, login, logout, password hashing, and three roles: Administrator, Document Owner, and Viewer. New users should get the Viewer role by default. Protect the dashboards based on user roles and create tests to verify that users cannot access dashboards they are not authorized to use. I also want the login and registration pages to have a modern, attractive interface with a logo instead of a plain design.
 
 **What it produced:**
 - User model and password hashing
@@ -138,3 +138,4 @@ New registrations receive the Viewer role. Secure administrator-managed role ass
 
 **Commit:**
 Pending.
+

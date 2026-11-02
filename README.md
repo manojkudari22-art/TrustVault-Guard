@@ -1,4 +1,4 @@
-﻿# TrustVault-Guard
+﻿# TrustVault Guard
 
 A secure document-sharing platform built for the Snovasys Fresher Hiring Challenge 2026.
 
@@ -30,4 +30,5 @@ Day 1 - Planning and initial setup.
 - Architecture: docs/ARCHITECTURE.md
 - Threat model: docs/THREATS.md
 - AI prompts: docs/PROMPTS.md
+
 

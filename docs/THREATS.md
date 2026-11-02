@@ -1,4 +1,4 @@
-# TrustVault Threat Model
+﻿# TrustVault Guard Threat Model
 
 ## Assets
 - Confidential documents
@@ -26,7 +26,7 @@
 ## Security Principle
 Default deny: Unless access is explicitly granted, the user must not access the document.
 
-## 2026-11-02 � Day 2: Authentication and Roles
+## 2026-11-02 — Day 2: Authentication and Roles
 
 ### Threat: Unauthorized account access
 **Risk:** An attacker may try to access another user's account using incorrect credentials.
@@ -60,3 +60,4 @@ Default deny: Unless access is explicitly granted, the user must not access the 
 - Authentication tests passed: 8/8.
 - Role-based access checks are enforced server-side.
 - Further security hardening is pending.
+

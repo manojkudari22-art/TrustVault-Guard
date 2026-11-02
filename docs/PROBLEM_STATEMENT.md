@@ -1,4 +1,4 @@
-# TrustVault - Secure Document Sharing
+﻿# TrustVault Guard - Secure Document Sharing
 
 ## Problem Statement
 Build a secure document sharing platform where unauthorized users cannot read confidential files and every important action is recorded in an audit trail.
@@ -22,3 +22,4 @@ Build a secure document sharing platform where unauthorized users cannot read co
 - Immediate permission revocation
 - Secure file storage
 - Tamper-evident audit trail
+

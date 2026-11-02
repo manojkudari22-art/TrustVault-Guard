@@ -1,8 +1,8 @@
-﻿# TrustVault — Project Plan and Daily Progress
+﻿# TrustVault Guard — Project Plan and Daily Progress
 
 ## Project Overview
 
-TrustVault is a secure document-sharing platform developed for the Snovasys Fresher Hiring Challenge 2026.
+TrustVault Guard is a secure document-sharing platform developed for the Snovasys Fresher Hiring Challenge 2026.
 
 The application focuses on secure document access, role-based permissions, and an audit trail of document activities.
 
@@ -58,7 +58,7 @@ The application focuses on secure document access, role-based permissions, and a
 ### Day 1 — 2026-11-01
 **Completed:**
 - Reviewed challenge requirements.
-- Created the TrustVault project repository.
+- Created the TrustVault Guard project repository.
 - Set up the initial project structure.
 - Created initial documentation:
   - Problem statement
@@ -140,3 +140,4 @@ The application focuses on secure document access, role-based permissions, and a
 **Current focus:** Secure document upload and management.
 
 **Note:** Update this file daily. Keep the original project plan at the top and append each day's actual progress below it.
+
