@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>My Documents</h1>
+
+{% if documents %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Uploaded Date</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for document in documents %}
+        <tr>
+            <td>{{ document.name }}</td>
+            <td>{{ document.category }}</td>
+            <td>{{ document.uploaded_at.strftime("%Y-%m-%d") }}</td><td><a href="{{ url_for('documents.download_document', document_id=document.id) }}">Download</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No documents uploaded yet.</p>
+{% endif %}
+
+{% endblock %}
+
