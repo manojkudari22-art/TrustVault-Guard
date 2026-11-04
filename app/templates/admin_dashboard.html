@@ -1,36 +1,46 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrustVault Guard | Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustVault Guard | Administrator</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <nav class="navbar">
-        <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1"/></svg></div>TrustVault Guard</div>
-        <a class="nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
-    </nav>
+<body class="tv-dashboard">
+<nav class="tv-nav">
+  <div class="tv-brand">
+    <span class="tv-lock"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1"/></svg></span>
+    TrustVault <span>Guard</span>
+  </div>
+  <div class="tv-nav-right">
+    <a class="tv-nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+    <a class="tv-nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+</nav>
 
-    <main class="dashboard">
-        <section class="welcome">
-            <h1>Administrator Console </h1>
-            <p>Manage and monitor the TrustVault Guard platform.</p>
-        </section>
-        <section class="stats">
-            <div class="stat">
-                <h3>ACCESS LEVEL</h3>
-                <p>Administrator</p>
-            </div>
-            <div class="stat">
-                <h3>SECURITY</h3>
-                <p>Full platform access</p>
-            </div>
-        </section>
-        <section class="actions">
-            <a class="action" href="{{ url_for('auth.dashboard') }}">Back to Dashboard</a>
-        </section>
-    </main>
+<main class="tv-main">
+  <section class="tv-welcome">
+    <div>
+      <div class="tv-eyebrow">PLATFORM MANAGEMENT</div>
+      <h1>Administrator Console</h1>
+      <p>Manage and monitor the TrustVault Guard platform.</p>
+    </div>
+    <div class="tv-welcome-icon"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.3 2.3 4.7-4.8"/></svg></div>
+  </section>
+
+  <section class="tv-section-heading"><h2>Administration Overview</h2><p>Your platform access and security status</p></section>
+  <section class="tv-stats">
+    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">ACCESS LEVEL</div><div class="tv-stat-value">Administrator</div></article>
+    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">SECURITY</div><div class="tv-stat-value tv-success">Protected</div></article>
+    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">PLATFORM STATUS</div><div class="tv-stat-value">Active</div></article>
+  </section>
+
+  <section class="tv-section-heading"><h2>Quick Access</h2><p>Navigate through the administrator workspace</p></section>
+  <section class="tv-actions">
+    <a class="tv-action-card" href="{{ url_for('auth.dashboard') }}"><span class="tv-action-icon">?</span><span><strong>Back to Dashboard</strong><small>Return to your secure workspace</small></span><span class="tv-arrow">?</span></a>
+    <a class="tv-action-card" href="{{ url_for('auth.logout') }}"><span class="tv-action-icon">?</span><span><strong>Sign Out</strong><small>Securely end your session</small></span><span class="tv-arrow">?</span></a>
+  </section>
+  <footer class="tv-footer">TrustVault Guard | Secure Document Sharing</footer>
+</main>
 </body>
 </html>
-

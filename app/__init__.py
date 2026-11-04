@@ -21,15 +21,21 @@ def create_app():
     login_manager.login_view = "auth.login"
 
     from app.auth.models import User
+    from app.documents.models import Document
 
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
     from app.auth.routes import auth
+    from app.documents.routes import documents
+
     app.register_blueprint(auth)
+    app.register_blueprint(documents)
 
     with app.app_context():
         db.create_all()
 
     return app
+
+    from app.audit.models import AuditLog

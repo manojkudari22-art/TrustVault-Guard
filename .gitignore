@@ -6,3 +6,9 @@ instance/
 private_uploads/*
 !.gitkeep
 .pytest_cache/
+
+# Local project copies and temporary files
+TrustVault-Secure/
+.vscode/
+dump.txt
+*.bak
