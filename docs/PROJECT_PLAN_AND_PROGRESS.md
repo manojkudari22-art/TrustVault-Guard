@@ -27,6 +27,7 @@ The application focuses on secure document access, role-based permissions, and a
 - Validate uploaded files.
 - Restrict document access to authorized users.
 
+
 ### Day 4 — 2026-11-04
 **Implemented:**
 - Continued document management implementation.
@@ -101,13 +102,12 @@ The application focuses on secure document access, role-based permissions, and a
 
 - Day 1: Completed
 - Day 2: Completed
-- Day 3: Pending
-- Day 4: In Progress
+- Day 3: Completed
+- Day 4: Completed
 - Day 5: Pending
 - Day 6: Pending
 - Day 7: Pending
 
-**Current focus:** Document management, upload UI, permissions, and audit verification.
+**Current focus:** Day 5 — Document search, filtering, admin activity views, and remaining validation.
 
-**Note:** Update this file daily. Keep the original project plan at the top and append each day's actual progress below it.
-
+**Note:** Day 1–4 development milestones are completed. Browser-based upload, document-list visibility, download, and audit verification remain pending until tested.

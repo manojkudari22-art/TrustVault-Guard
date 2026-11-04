@@ -61,3 +61,41 @@ Default deny: Unless access is explicitly granted, the user must not access the 
 - Role-based access checks are enforced server-side.
 - Further security hardening is pending.
 
+
+## 2026-11-04 — Day 4: Document Management
+
+### Threat: Malicious or invalid file uploads
+**Risk:** An attacker may upload an unsupported file type disguised with a misleading filename or MIME type.
+
+**Mitigation:** The upload route checks the file extension and MIME type against an allowed-file list.
+
+**Status:** Basic server-side validation implemented. Additional content inspection and security testing are pending.
+
+### Threat: Stored filename collision or filename manipulation
+**Risk:** User-controlled filenames may cause collisions or create unsafe storage paths.
+
+**Mitigation:** The application generates UUID-based server-side filenames and uses sanitized original filenames for document metadata.
+
+**Status:** Implemented in the upload flow. Path-handling security testing is pending.
+
+### Threat: Unauthorized document upload
+**Risk:** A Viewer may attempt to upload documents without the required role.
+
+**Mitigation:** The upload route checks the authenticated user's role and permits only Document Owner and Administrator roles.
+
+**Status:** Implemented. Negative authorization tests are pending.
+
+### Threat: Missing document audit trail
+**Risk:** Document upload activity may not be traceable during a security review.
+
+**Mitigation:** The upload flow integrates audit-event logging for document uploads.
+
+**Status:** Integrated. Audit-record persistence and completeness must still be verified.
+
+### Day 4 Security Validation
+- Extension and MIME-type checks added to the upload route.
+- UUID-based server-side filenames implemented.
+- Upload role restrictions added.
+- Upload audit-event integration added.
+- Browser upload, document-list visibility, download authorization, and audit persistence verification remain pending.
+

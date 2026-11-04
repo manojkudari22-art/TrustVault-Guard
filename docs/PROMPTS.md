@@ -139,3 +139,36 @@ New registrations receive the Viewer role. Secure administrator-managed role ass
 **Commit:**
 Pending.
 
+
+## Day 4 — 2026-11-04
+
+### Prompt 6 — Secure Document Management
+
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+Help implement secure document management in the existing Flask TrustVault Guard project. Add document upload handling, file extension and MIME-type validation, UUID-based server-side filenames, role restrictions for uploads, document database records, and audit logging. Improve the dashboard upload interface with file selection, drag-and-drop interaction, and selected-file feedback. Preserve the existing authentication and role structure.
+
+**What it produced:**
+- Document model and document module structure
+- Document upload route
+- Extension and MIME-type validation
+- UUID-based stored filenames
+- Upload restrictions for Document Owner and Administrator
+- Upload audit-event integration
+- Dashboard upload interface improvements
+
+**What was wrong / limitations:**
+The initial upload implementation did not yet demonstrate complete document lifecycle security. The dashboard did not initially display Flask flash notifications. Browser-based drag-and-drop, document-list visibility, download behavior, and audit-event persistence still require verification.
+
+**What I did instead:**
+Integrated document management into the existing Flask application, improved the upload interface, and recorded the remaining validation tasks instead of treating untested behavior as complete.
+
+**Validation:**
+Implementation committed and pushed. Browser-based upload, document listing, download, and audit verification remain pending.
+
+**Security note:**
+Server-side validation and role checks are implemented in the upload flow. File-size limits, comprehensive document authorization tests, and further security hardening still need verification.
+
+**Commit:** c23490c
+
