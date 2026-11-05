@@ -99,3 +99,40 @@ Default deny: Unless access is explicitly granted, the user must not access the 
 - Upload audit-event integration added.
 - Browser upload, document-list visibility, download authorization, and audit persistence verification remain pending.
 
+
+## 2026-11-05 — Day 5: Document Listing and Search Security
+
+### Threat: Unauthorized document metadata disclosure
+**Risk:** A user may attempt to discover another user's document names, categories, or upload information through the listing and search interface.
+
+**Mitigation:** The document listing query is scoped to the authenticated user's owner ID. The route is restricted to Document Owner and Administrator roles. Category options and document counts are also scoped to the current owner.
+
+**Status:** Owner-scoped listing and filtering implemented. Dedicated cross-user access tests are pending.
+
+### Threat: Invalid search and filter input
+**Risk:** Unexpected date or page values may cause application errors or unintended query behavior.
+
+**Mitigation:** Search input length is limited. Date values are parsed using the expected date format, and page values are converted and validated before pagination. Invalid date and page values are rejected.
+
+**Status:** Input validation implemented. Dedicated invalid-input tests are pending.
+
+### Threat: Document metadata exposure through pagination
+**Risk:** Pagination counts or result pages may reveal records belonging to other users if ownership restrictions are applied incorrectly.
+
+**Mitigation:** The owner restriction is applied to the document query before calculating counts, categories, and paginated results.
+
+**Status:** Owner-scoped pagination implemented. Automated isolation tests are pending.
+
+### Threat: Incorrect owner dashboard document count
+**Risk:** A dashboard may display document totals belonging to other users.
+
+**Mitigation:** The owner dashboard count query filters documents using the authenticated user's ID.
+
+**Status:** Owner-specific document count implemented. Multi-user verification is pending.
+
+### Day 5 Security Validation
+- Owner-scoped document listing and search implemented.
+- Category and date filtering implemented.
+- Pagination and query-parameter validation implemented.
+- Owner-specific document count implemented.
+- Dedicated document authorization and filter tests remain to be performed.

@@ -172,3 +172,36 @@ Server-side validation and role checks are implemented in the upload flow. File-
 
 **Commit:** c23490c
 
+
+## Day 5 — 2026-11-05
+
+### Prompt 7 — Document Search, Filtering and Pagination
+
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+Extend the existing Flask document-management module with an owner-specific document listing. Add filename search, category filtering, date filtering, pagination, input validation, and a dynamic document count on the owner dashboard. Connect the Documents navigation link to the listing page while preserving existing authentication and role restrictions.
+
+**What it produced:**
+- Owner-restricted My Documents route.
+- Filename search with a maximum query length.
+- Category and upload-date filters.
+- Pagination for document results.
+- Validation of date and page query parameters.
+- Owner-specific document categories and document counts.
+- Documents navigation and owner-dashboard quick access.
+
+**What was wrong / limitations:**
+The earlier document-management interface did not provide complete search, filtering, pagination, or a connected owner document-listing workflow. The new functionality still requires dedicated document-route tests and browser-based verification.
+
+**What I did instead:**
+Updated the document routes and templates, connected the dashboard navigation, and added a dynamic owner document count.
+
+**Validation:**
+- Python compilation completed without syntax errors.
+- Application routes were registered.
+- Relevant templates loaded successfully.
+- Authentication tests passed: 8/8.
+- Dedicated document search, filtering, pagination, and browser tests still require verification.
+
+**Commit:** 056bbc2
