@@ -1,29 +1,103 @@
-{% extends "base.html" %}
-{% block content %}
-<h1>My Documents</h1>
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Documents | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .doc-page { max-width: 1100px; margin: 40px auto; padding: 24px; }
+        .doc-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+        .doc-filters input, .doc-filters select {
+            padding: 11px; border: 1px solid #334155; border-radius: 8px;
+            background: #111827; color: white;
+        }
+        .doc-filters button, .doc-link {
+            padding: 11px 16px; border: 0; border-radius: 8px;
+            background: #2563eb; color: white; text-decoration: none;
+            cursor: pointer;
+        }
+        .doc-table-wrap { overflow-x: auto; }
+        .doc-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .doc-table th, .doc-table td {
+            padding: 14px; text-align: left; border-bottom: 1px solid #334155;
+        }
+        .doc-pagination { display: flex; gap: 16px; margin-top: 24px; align-items: center; }
+        .doc-muted { color: #94a3b8; }
+    </style>
+</head>
+<body>
+<main class="doc-page">
+    <h1>My Documents</h1>
+    <p class="doc-muted">Search and manage your uploaded documents.</p>
 
-{% if documents %}
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Uploaded Date</th><th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for document in documents %}
-        <tr>
-            <td>{{ document.name }}</td>
-            <td>{{ document.category }}</td>
-            <td>{{ document.uploaded_at.strftime("%Y-%m-%d") }}</td><td><a href="{{ url_for('documents.download_document', document_id=document.id) }}">Download</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No documents uploaded yet.</p>
-{% endif %}
+    <form method="GET" action="{{ url_for('documents.my_documents') }}" class="doc-filters">
+        <input type="search" name="q" placeholder="Search filename"
+               value="{{ search }}" maxlength="100">
 
-{% endblock %}
+        <select name="category">
+            <option value="">All Categories</option>
+            {% for item in categories %}
+            <option value="{{ item }}" {% if category == item %}selected{% endif %}>
+                {{ item }}
+            </option>
+            {% endfor %}
+        </select>
 
+        <input type="date" name="date" value="{{ date_filter }}">
+        <button type="submit">Apply Filters</button>
+        <a class="doc-link" href="{{ url_for('documents.my_documents') }}">Clear</a>
+    </form>
+
+    <p class="doc-muted">Total matching documents: {{ total_documents }}</p>
+
+    {% if documents %}
+    <div class="doc-table-wrap">
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Uploaded Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in documents %}
+                <tr>
+                    <td>{{ document.name }}</td>
+                    <td>{{ document.category }}</td>
+                    <td>{{ document.uploaded_at.strftime("%Y-%m-%d") }}</td>
+                    <td>
+                        <a class="doc-link"
+                           href="{{ url_for('documents.download_document', document_id=document.id) }}">
+                            Download
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="doc-pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('documents.my_documents', q=search, category=category, date=date_filter, page=page-1) }}">Previous</a>
+        {% endif %}
+
+        <span>Page {{ page }} of {{ total_pages }}</span>
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('documents.my_documents', q=search, category=category, date=date_filter, page=page+1) }}">Next</a>
+        {% endif %}
+    </nav>
+    {% else %}
+    <p class="doc-muted">No documents found matching your filters.</p>
+    {% endif %}
+
+    <p style="margin-top: 30px;">
+        <a href="{{ url_for('auth.dashboard') }}">Back to Dashboard</a>
+    </p>
+</main>
+</body>
+</html>

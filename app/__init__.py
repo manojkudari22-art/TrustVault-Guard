@@ -1,4 +1,4 @@
-from flask import Flask
+﻿from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -22,6 +22,7 @@ def create_app():
 
     from app.auth.models import User
     from app.documents.models import Document
+    from app.audit.models import AuditLog
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -37,5 +38,3 @@ def create_app():
         db.create_all()
 
     return app
-
-    from app.audit.models import AuditLog

@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+from datetime import datetime, timedelta
 
 from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory
 from flask_login import login_required, current_user
@@ -104,15 +105,73 @@ def my_documents():
         flash("You are not authorized to view these documents.", "error")
         return redirect(url_for("auth.dashboard"))
 
-    my_documents = Document.query.filter_by(
-        owner_id=current_user.id
-    ).order_by(Document.uploaded_at.desc()).all()
+    query = Document.query.filter_by(owner_id=current_user.id)
+
+    search = request.args.get("q", "").strip()[:100]
+    category = request.args.get("category", "").strip()[:100]
+    date_filter = request.args.get("date", "").strip()
+
+    if search:
+        query = query.filter(Document.name.ilike(f"%{search}%"))
+
+    if category:
+        query = query.filter_by(category=category)
+
+    if date_filter:
+        try:
+            selected_date = datetime.strptime(date_filter, "%Y-%m-%d")
+        except ValueError:
+            from flask import abort
+            abort(400)
+
+        next_date = selected_date + timedelta(days=1)
+        query = query.filter(
+            Document.uploaded_at >= selected_date,
+            Document.uploaded_at < next_date
+        )
+
+    try:
+        page = int(request.args.get("page", "1"))
+    except ValueError:
+        from flask import abort
+        abort(400)
+
+    if page < 1:
+        from flask import abort
+        abort(400)
+
+    per_page = 10
+    total_documents = query.count()
+    total_pages = max(1, (total_documents + per_page - 1) // per_page)
+    page = min(page, total_pages)
+
+    documents_page = (
+        query.order_by(Document.uploaded_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    categories = [
+        row[0] for row in
+        db.session.query(Document.category)
+        .filter_by(owner_id=current_user.id)
+        .distinct()
+        .order_by(Document.category)
+        .all()
+    ]
 
     return render_template(
         "documents/list.html",
-        documents=my_documents
+        documents=documents_page,
+        search=search,
+        category=category,
+        date_filter=date_filter,
+        categories=categories,
+        page=page,
+        total_pages=total_pages,
+        total_documents=total_documents
     )
-
 @documents.route("/download/<int:document_id>")
 @login_required
 def download_document(document_id):

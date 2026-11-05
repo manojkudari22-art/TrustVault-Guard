@@ -5,6 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 from app.auth.models import User
 from app import db
+from app.documents.models import Document
 
 auth = Blueprint("auth", __name__)
 
@@ -101,4 +102,5 @@ def admin_dashboard():
 @auth.route("/owner")
 @role_required("Document Owner", "Administrator")
 def owner_dashboard():
-    return render_template("owner_dashboard.html")
+    document_count = Document.query.filter_by(owner_id=current_user.id).count()
+    return render_template("owner_dashboard.html", document_count=document_count)

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -29,14 +29,13 @@
                 <span>Dashboard</span>
             </a>
 
-            <span class="tv-side-link tv-disabled" title="Documents feature coming soon" aria-disabled="true">
+            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6M8 13h8M8 17h8"/>
                 </svg>
                 <span>Documents</span>
-                <small class="tv-coming-soon">Soon</small>
-            </span>
+            </a>
 
             <span class="tv-side-link tv-disabled" title="Sharing feature coming soon" aria-disabled="true">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
