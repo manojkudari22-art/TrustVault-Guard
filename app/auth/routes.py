@@ -12,7 +12,7 @@ auth = Blueprint("auth", __name__)
 
 @auth.route("/")
 def home():
-    return redirect(url_for("auth.login"))
+    return render_template("landing.html")
 
 
 

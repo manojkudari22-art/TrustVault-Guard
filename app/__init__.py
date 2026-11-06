@@ -23,6 +23,7 @@ def create_app():
     from app.auth.models import User
     from app.documents.models import Document
     from app.audit.models import AuditLog
+    from app.documents.permissions import DocumentPermission
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -38,3 +39,4 @@ def create_app():
         db.create_all()
 
     return app
+

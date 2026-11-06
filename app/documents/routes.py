@@ -209,3 +209,12 @@ def download_document(document_id):
         download_name=document.original_filename
     )
 
+
+@documents.route("/upload", methods=["GET"])
+@login_required
+def upload_page():
+    if current_user.role not in ["Document Owner", "Administrator"]:
+        flash("You are not authorized to upload documents.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    return render_template("documents/upload.html")

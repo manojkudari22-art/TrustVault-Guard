@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Document | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .upload-page {
+            max-width: 850px;
+            margin: 50px auto;
+            padding: 28px;
+        }
+        .upload-card {
+            margin-top: 28px;
+            padding: 32px;
+            border: 1px solid #334155;
+            border-radius: 18px;
+            background: #111827;
+        }
+        .upload-drop {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 45px 20px;
+            border: 2px dashed #3b82f6;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: .25s ease;
+        }
+        .upload-drop:hover, .upload-drop.drag-active {
+            background: #1e3a8a33;
+            border-color: #60a5fa;
+            transform: scale(1.01);
+        }
+        .upload-drop input { display: none; }
+        .upload-icon { font-size: 42px; color: #60a5fa; }
+        .upload-button {
+            padding: 11px 20px;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+        }
+        .upload-category {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 22px 0;
+            padding: 13px;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            background: #0f172a;
+            color: white;
+        }
+        .upload-submit {
+            width: 100%;
+            padding: 14px;
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+        .upload-submit:hover { background: #1d4ed8; transform: translateY(-2px); }
+        .upload-muted { color: #94a3b8; }
+        .upload-back { color: #60a5fa; text-decoration: none; }
+        .upload-flash { margin: 15px 0; color: #fca5a5; }
+    </style>
+</head>
+<body>
+<main class="upload-page">
+    <a class="upload-back" href="{{ url_for('auth.dashboard') }}">← Back to Dashboard</a>
+    <h1>Upload Document</h1>
+    <p class="upload-muted">Add a document to your secure private workspace.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <p class="upload-flash">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="upload-card">
+        <form method="POST"
+              action="{{ url_for('documents.upload_document') }}"
+              enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label class="upload-drop" id="upload-drop" for="upload-file">
+                <span class="upload-icon">↑</span>
+                <strong id="upload-title">Drop your document here</strong>
+                <span class="upload-muted" id="upload-help">or click to browse files</span>
+                <span class="upload-button">Choose File</span>
+                <input type="file" id="upload-file" name="file" required
+                       accept=".pdf,.txt,.png,.jpg,.jpeg,.doc,.docx">
+            </label>
+
+            <p class="upload-muted" id="upload-size">No file selected</p>
+
+            <label for="category">Document Category</label>
+            <input class="upload-category" type="text" id="category"
+                   name="category" maxlength="100" placeholder="General">
+
+            <button class="upload-submit" type="submit">Upload Securely</button>
+        </form>
+    </section>
+</main>
+
+<script>
+const input = document.getElementById("upload-file");
+const drop = document.getElementById("upload-drop");
+
+function showFile(file) {
+    if (!file) return;
+    document.getElementById("upload-title").textContent = file.name;
+    document.getElementById("upload-help").textContent = "File selected";
+    document.getElementById("upload-size").textContent =
+        (file.size / 1024).toFixed(1) + " KB";
+}
+
+input.addEventListener("change", () => showFile(input.files[0]));
+
+drop.addEventListener("dragover", event => {
+    event.preventDefault();
+    drop.classList.add("drag-active");
+});
+
+drop.addEventListener("dragleave", () => {
+    drop.classList.remove("drag-active");
+});
+
+drop.addEventListener("drop", event => {
+    event.preventDefault();
+    drop.classList.remove("drag-active");
+    if (event.dataTransfer.files.length) {
+        input.files = event.dataTransfer.files;
+        showFile(input.files[0]);
+    }
+});
+</script>
+</body>
+</html>
