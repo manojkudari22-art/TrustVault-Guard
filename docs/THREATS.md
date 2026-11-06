@@ -136,3 +136,40 @@ Default deny: Unless access is explicitly granted, the user must not access the 
 - Pagination and query-parameter validation implemented.
 - Owner-specific document count implemented.
 - Dedicated document authorization and filter tests remain to be performed.
+
+## 2026-11-06 — Day 6: Dashboard and Role-Based Access Security
+
+### Threat: Unauthorized access to the Upload page
+**Risk:** A Viewer may attempt to open the document upload page directly instead of using dashboard navigation.
+
+**Mitigation:** The GET upload route requires authentication and permits only Document Owner and Administrator roles. The existing POST upload route retains its role check.
+
+**Validation:** Administrator access returned HTTP 200. Viewer direct access returned HTTP 302 and redirected to `/dashboard`.
+
+**Status:** Role restriction verified.
+
+### Threat: Unauthorized access to My Documents
+**Risk:** A Viewer may attempt to access the owner-specific document listing by entering its URL directly.
+
+**Mitigation:** The My Documents route checks the authenticated user's role and permits only Document Owner and Administrator roles. The document query is scoped to the current user's owner ID.
+
+**Validation:** Viewer direct access returned HTTP 302 and redirected to `/dashboard`.
+
+**Status:** Role restriction verified. Dashboard response also contained the My Documents URL despite the visible link text being absent; this requires further investigation.
+
+### Threat: Unauthenticated access to document-management pages
+**Risk:** An unauthenticated visitor may attempt to access protected document-management routes.
+
+**Mitigation:** Flask-Login authentication protection is applied to the Upload and My Documents routes.
+
+**Validation:** An unauthenticated Upload page request redirected to the Login page.
+
+**Status:** Basic authentication protection verified.
+
+### Day 6 Security Validation and Remaining Gaps
+- Administrator dashboard and Upload page access verified.
+- Viewer Upload and My Documents route access blocked.
+- Existing user and database records preserved during test-client checks.
+- Full pytest suite did not complete because duplicate project test collection caused an import error.
+- Actual file upload, download, audit persistence, and complete document lifecycle testing remain pending.
+- Further review of dashboard link rendering is required.

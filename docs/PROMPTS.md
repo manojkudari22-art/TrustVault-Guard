@@ -205,3 +205,54 @@ Updated the document routes and templates, connected the dashboard navigation, a
 - Dedicated document search, filtering, pagination, and browser tests still require verification.
 
 **Commit:** 056bbc2
+
+## Day 6 — 2026-11-06
+
+### Prompt 8 — Landing Page and Dashboard Cleanup
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+Create a public landing page and improve the existing TrustVault dashboard without disturbing authentication or existing database records. Separate document upload functionality from the dashboard.
+
+**What it produced:**
+- Public landing page at `/`.
+- Login and Registration navigation.
+- Separate Upload page template.
+- Dashboard Upload Document and My Documents navigation.
+- Removed the embedded upload form from the dashboard.
+
+**Validation:**
+- Landing page returned HTTP 200.
+- Administrator dashboard returned HTTP 200.
+- Administrator Upload page returned HTTP 200.
+- Viewer Upload access redirected to `/dashboard`.
+- Viewer My Documents access redirected to `/dashboard`.
+- Actual file upload and download remain pending verification.
+
+### Prompt 9 — Role-Based Access Verification
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+Verify Administrator and Viewer access using Flask test-client sessions without modifying existing database records.
+
+**Validation:**
+- Administrator dashboard and Upload page access passed.
+- Viewer direct Upload access blocked.
+- Viewer direct My Documents access blocked.
+- Dashboard My Documents URL presence needs further investigation.
+
+### Prompt 10 — Pytest Collection Investigation
+**Tool:** ChatGPT
+
+**Prompt / Summary:**
+Run the test suite and investigate import errors while preserving both project folders and existing data.
+
+**Validation:**
+- Pytest attempted to collect tests from root and nested project folders.
+- `ModuleNotFoundError: No module named 'app'` occurred during collection.
+- Full test suite remains unverified.
+
+**Code Commit:** `b2001ea` — Day 6: Add landing page and role-based document upload UI.
+
+**Day 6 Development Status:** Completed.
+**Remaining Validation:** Pytest collection, actual upload/download, and outstanding security tests.

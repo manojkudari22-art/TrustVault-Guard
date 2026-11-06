@@ -81,23 +81,33 @@ The application focuses on secure document access, role-based permissions, priva
 
 **Implementation Status:** Pending.
 
-### Day 6 — 2026-11-06
-**Implemented:**
-- Verify document upload and download end to end.
-- Test browser drag-and-drop and file selection.
-- Verify upload success notifications.
-- Test document listing, search, category and date filters.
-- Test pagination and invalid-input handling.
-- Implement and verify Administrator activity and audit-log views.
-- Verify audit-event persistence and audit-log integrity.
-- Complete document sharing, permissions and access-revocation functionality.
-- Test unauthorized access and role-based authorization.
-- Review production configuration, secure storage and database backups.
-- Perform deployment preparation and end-to-end testing.
-- Fix identified bugs and update technical documentation.
+### Day 6 - 2026-11-06
 
-**Implementation Status:** Pending.
-**Validation Status:** Completed.
+**Implemented:**
+- Created the public TrustVault landing page and connected the root route.
+- Removed the embedded upload form from the dashboard.
+- Created a separate upload page with file selection, drag-and-drop UI and category input.
+- Preserved the existing upload POST functionality.
+- Added role-based dashboard navigation for Document Owners and Administrators.
+- Added login and role restrictions to the upload page.
+- Verified Administrator upload-page access (HTTP 200).
+- Verified Viewer upload-page restriction (HTTP 302 redirect).
+- Verified Viewer direct My Documents access is restricted.
+- Verified unauthenticated upload-page access redirects to login.
+- Created code commit `b2001ea`.
+
+**Implementation Status:** Completed for the Day 6 scope.
+
+**Validation Status:** Partially Completed.
+
+**Pending Validation and Known Issues:**
+- Full pytest collection failed because root and nested project test folders were both collected, resulting in `ModuleNotFoundError: No module named 'app'`.
+- Verify actual document upload and download end to end.
+- Verify audit-event persistence and integrity.
+- Complete sharing and access-revocation tests.
+- Investigate the unexpected My Documents URL in the Viewer dashboard response.
+- Complete remaining security and browser tests.
+
 ### Day 7 — 2026-11-07
 **Planned:**
 - Prepare the final project demonstration.
