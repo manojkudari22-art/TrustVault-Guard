@@ -1,4 +1,5 @@
 import io
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -356,7 +357,7 @@ def test_document_owner_can_replace_content(client, app):
         f"/documents/replace/{document_id}",
         data={
             "file": (
-                io.BytesIO(b"New owner replacement content"),
+                io.BytesIO(b"%PDF-1.7\nNew owner replacement content"),
                 "replacement.pdf",
                 "application/pdf",
             )
@@ -384,7 +385,7 @@ def test_document_owner_can_replace_content(client, app):
         "replaceowner-test.pdf",
     )
 
-    assert new_path.read_bytes() == b"New owner replacement content"
+    assert new_path.read_bytes() == b"%PDF-1.7\nNew owner replacement content"
     assert not old_path.exists()
 
 
@@ -405,7 +406,7 @@ def test_edit_permission_user_can_replace_content(client, app):
         f"/documents/replace/{document_id}",
         data={
             "file": (
-                io.BytesIO(b"Editor replacement content"),
+                io.BytesIO(b"%PDF-1.7\nEditor replacement content"),
                 "editor-replacement.pdf",
                 "application/pdf",
             )
@@ -431,7 +432,7 @@ def test_edit_permission_user_can_replace_content(client, app):
         ).first().id
 
     new_path = Path(app.config["UPLOAD_FOLDER"], new_filename)
-    assert new_path.read_bytes() == b"Editor replacement content"
+    assert new_path.read_bytes() == b"%PDF-1.7\nEditor replacement content"
 
 
 @pytest.mark.parametrize(
@@ -525,3 +526,120 @@ def test_replacement_rejects_disallowed_file_type(client, app):
     )
     assert old_path.read_bytes() == old_content
 
+
+
+def test_replacement_rejects_spoofed_pdf_signature(client, app):
+    register_user(client, "spoofedpdfowner")
+    document_id, old_content = create_document(
+        app, "spoofedpdfowner"
+    )
+
+    login_user(client, "spoofedpdfowner")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"This is not a real PDF file"),
+                "fake.pdf",
+                "application/pdf",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "spoofedpdfowner-test.pdf"
+        assert document.original_filename == "report.pdf"
+
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "spoofedpdfowner-test.pdf",
+    )
+    assert old_path.read_bytes() == old_content
+
+
+def test_replacement_rejects_invalid_docx_archive(client, app):
+    register_user(client, "invaliddocxowner")
+    document_id, old_content = create_document(
+        app, "invaliddocxowner"
+    )
+
+    login_user(client, "invaliddocxowner")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"This is not a valid DOCX archive"),
+                "fake.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "invaliddocxowner-test.pdf"
+        assert document.original_filename == "report.pdf"
+
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "invaliddocxowner-test.pdf",
+    )
+    assert old_path.read_bytes() == old_content
+
+
+def test_replacement_rejects_docx_path_traversal(client, app):
+    register_user(client, "docxpathowner")
+    document_id, old_content = create_document(
+        app, "docxpathowner"
+    )
+
+    login_user(client, "docxpathowner")
+
+    malicious_docx = io.BytesIO()
+
+    with zipfile.ZipFile(malicious_docx, "w") as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>',
+        )
+        archive.writestr(
+            "word/document.xml",
+            '<document xmlns="http://schemas.openxmlformats.org/wordprocessingml/2006/main"></document>',
+        )
+        archive.writestr("../evil.txt", "malicious content")
+
+    malicious_docx.seek(0)
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                malicious_docx,
+                "malicious.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "docxpathowner-test.pdf"
+        assert document.original_filename == "report.pdf"
+
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "docxpathowner-test.pdf",
+    )
+    assert old_path.read_bytes() == old_content

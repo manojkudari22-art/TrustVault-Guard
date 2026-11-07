@@ -1,4 +1,6 @@
 import uuid
+import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -27,16 +29,94 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-def allowed_file(filename, mimetype):
+def allowed_file(filename, mimetype, file_stream):
     if "." not in filename:
         return False
 
     extension = filename.rsplit(".", 1)[1].lower()
 
-    return (
-        extension in ALLOWED_EXTENSIONS
-        and mimetype in ALLOWED_EXTENSIONS[extension]
-    )
+    if (
+        extension not in ALLOWED_EXTENSIONS
+        or mimetype not in ALLOWED_EXTENSIONS[extension]
+    ):
+        return False
+
+    try:
+        signature = file_stream.read(8)
+
+        if extension == "pdf":
+            return signature.startswith(b"%PDF-")
+
+        if extension == "png":
+            return signature == b"\x89PNG\r\n\x1a\n"
+
+        if extension in {"jpg", "jpeg"}:
+            return signature.startswith(b"\xff\xd8\xff")
+
+        if extension == "doc":
+            return signature == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+        if extension == "docx":
+            file_stream.seek(0)
+            with zipfile.ZipFile(file_stream) as archive:
+                entries = archive.infolist()
+
+                if len(entries) > 1000:
+                    return False
+
+                total_size = sum(entry.file_size for entry in entries)
+                if total_size > 50 * 1024 * 1024:
+                    return False
+
+                for entry in entries:
+                    entry_path = Path(entry.filename)
+
+                    if (
+                        entry_path.is_absolute()
+                        or ".." in entry_path.parts
+                        or "\\" in entry.filename
+                    ):
+                        return False
+
+                names = {entry.filename for entry in entries}
+                required = {
+                    "[Content_Types].xml",
+                    "word/document.xml",
+                }
+
+                if not required.issubset(names):
+                    return False
+
+                if archive.testzip() is not None:
+                    return False
+
+                content_types = ET.fromstring(
+                    archive.read("[Content_Types].xml")
+                )
+                document_xml = ET.fromstring(
+                    archive.read("word/document.xml")
+                )
+
+                return (
+                    content_types.tag.endswith("}Types")
+                    and document_xml.tag.endswith("}document")
+                )
+
+        if extension == "txt":
+            file_stream.seek(0)
+            content = file_stream.read()
+            if b"\x00" in content:
+                return False
+            content.decode("utf-8-sig")
+            return True
+
+        return False
+
+    except (OSError, UnicodeDecodeError, zipfile.BadZipFile, ET.ParseError, KeyError, RuntimeError):
+        return False
+
+    finally:
+        file_stream.seek(0)
 
 
 @documents.route("/upload", methods=["POST"])
@@ -59,7 +139,7 @@ def upload_document():
         flash("Invalid filename.", "error")
         return redirect(url_for("auth.dashboard"))
 
-    if not allowed_file(original_filename, uploaded_file.mimetype):
+    if not allowed_file(original_filename, uploaded_file.mimetype, uploaded_file.stream):
         flash("File type is not allowed.", "error")
         return redirect(url_for("auth.dashboard"))
 
@@ -655,7 +735,7 @@ def replace_document_content(document_id):
     original_filename = secure_filename(uploaded_file.filename)
 
     if not original_filename or not allowed_file(
-        original_filename, uploaded_file.mimetype
+        original_filename, uploaded_file.mimetype, uploaded_file.stream
     ):
         flash("File type is not allowed.", "error")
         return redirect(url_for("documents.my_documents"))
