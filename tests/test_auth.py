@@ -6,21 +6,17 @@ from app.auth.models import User
 
 @pytest.fixture
 def app():
-    app = create_app()
-    app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,
-        SQLALCHEMY_DATABASE_URI="sqlite://",
-        SECRET_KEY="test-secret-key",
-    )
+    app = create_app({
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+        "SQLALCHEMY_DATABASE_URI": "sqlite://",
+        "SECRET_KEY": "test-secret-key",
+    })
 
     with app.app_context():
-        db.drop_all()
-        db.create_all()
         yield app
         db.session.remove()
         db.drop_all()
-
 
 @pytest.fixture
 def client(app):

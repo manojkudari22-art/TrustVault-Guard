@@ -3,39 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071329">
     <title>TrustVault Guard | Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="tv-dashboard">
 
 <div class="tv-layout">
-    <aside class="tv-sidebar">
-        <a class="tv-brand" href="{{ request.path }}">
+
+    <button class="tv-menu-toggle" id="tvMenuToggle"
+            type="button" aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+
+    <div class="tv-sidebar-overlay" id="tvSidebarOverlay"></div>
+
+    <aside class="tv-sidebar" id="tvSidebar">
+        <a class="tv-brand" href="{{ url_for('auth.dashboard') }}">
             <span class="tv-brand-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="4" y="10" width="16" height="11" rx="2"/>
-                    <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-                    <circle cx="12" cy="15" r="1"/>
+                <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                    <path d="M32 4 54 13v17c0 15-9 24-22 31C19 54 10 45 10 30V13L32 4Z" fill="#071329"/>
+                    <path d="m21 32 8 8 15-17" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </span>
             <span>TrustVault <strong>Guard</strong></span>
         </a>
 
+        <div class="tv-sidebar-caption">WORKSPACE</div>
+
         <nav class="tv-sidebar-nav" aria-label="Main navigation">
-            <a class="tv-side-link active" href="{{ request.path }}">
+            <a class="tv-side-link active" href="{{ url_for('auth.dashboard') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>
                 </svg>
                 <span>Dashboard</span>
             </a>
 
+            {% if current_user.role in ["Document Owner", "Administrator"] %}
             <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6M8 13h8M8 17h8"/>
                 </svg>
-                <span>Documents</span>
+                <span>My Documents</span>
             </a>
+            {% endif %}
+
+            {% if current_user.role in ["Document Owner", "Administrator"] %}
+            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}">
+                <span>Owner Workspace</span>
+            </a>
+            {% endif %}
+
+            {% if current_user.role == "Administrator" %}
+            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}">
+                <span>Admin Console</span>
+            </a>
+            {% endif %}
 
             <span class="tv-side-link tv-disabled" title="Sharing feature coming soon" aria-disabled="true">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -65,9 +89,21 @@
                 <span>Settings</span>
                 <small class="tv-coming-soon">Soon</small>
             </span>
+            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/>
+                    <path d="M3 3v5h5M12 7v5l3 2"/>
+                </svg>
+                <span>My History</span>
+            </a>
         </nav>
 
         <div class="tv-sidebar-bottom">
+            <div class="tv-sidebar-security">
+                <span class="tv-security-symbol">✦</span>
+                <strong>Security first</strong>
+                <small>Your documents stay under your control.</small>
+            </div>
             <div class="tv-sidebar-divider"></div>
             <a class="tv-side-link tv-logout-link" href="{{ url_for('auth.logout') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -80,10 +116,17 @@
     </aside>
 
     <div class="tv-workspace">
+
         <header class="tv-topbar">
-            <div class="tv-topbar-label">Secure Document Workspace</div>
+            <div class="tv-topbar-heading">
+                <span class="tv-topbar-label">SECURE DOCUMENT WORKSPACE</span>
+                <span class="tv-topbar-subtitle">Your private space for document management</span>
+            </div>
             <div class="tv-user">
-                <span>Welcome, {{ current_user.username }}</span>
+                <div class="tv-user-copy">
+                    <small>WELCOME BACK</small>
+                    <strong>{{ current_user.username }}</strong>
+                </div>
                 <span class="tv-profile-icon">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="4"/>
@@ -95,65 +138,116 @@
 
         <main class="tv-main">
             <div class="tv-content">
-                <section class="tv-welcome">
+
+                <section class="tv-welcome tv-premium-welcome">
                     <div class="tv-welcome-copy">
-                        <div class="tv-eyebrow">SECURE WORKSPACE</div>
-                        <h1>Welcome, {{ current_user.username }}</h1>
-                        <p>Your secure workspace is ready. Manage your documents with confidence.</p>
+                        <div class="tv-eyebrow"><span class="tv-live-dot"></span> YOUR SECURE WORKSPACE</div>
+                        <h1>Hello, {{ current_user.username }} <span class="tv-wave">✦</span></h1>
+                        <p>Your documents, your permissions, your control. Welcome to your secure workspace.</p>
+                        <div class="tv-welcome-actions">
+                            <a class="tv-primary-button" href="{{ url_for('documents.my_documents') }}">Explore Documents <span>→</span></a>
+                            {% if current_user.role in ["Document Owner", "Administrator"] %}
+                            <a class="tv-secondary-button" href="{{ url_for('documents.upload_page') }}">＋ Upload Document</a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="tv-welcome-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/>
-                            <path d="m8.5 12 2.3 2.3 4.7-4.8"/>
-                        </svg>
+
+                    <div class="tv-hero-art" aria-label="Document security illustration">
+                        <div class="tv-art-ring"></div>
+                        <div class="tv-art-document tv-art-document-one">
+                            <span class="tv-art-file-icon">▤</span>
+                            <span class="tv-art-lines"></span>
+                        </div>
+                        <div class="tv-art-document tv-art-document-two">
+                            <span class="tv-art-file-icon">▧</span>
+                            <span class="tv-art-lines"></span>
+                        </div>
+                        <div class="tv-art-shield">
+                            <svg viewBox="0 0 100 115" fill="none" aria-hidden="true">
+                                <path d="M50 5 91 20v32c0 27-16 44-41 58C25 96 9 79 9 52V20L50 5Z" fill="url(#tvShieldGradient)" stroke="#b5f5ff" stroke-width="2.5"/>
+                                <path d="M50 17 80 28v24c0 21-11 34-30 45-19-11-30-24-30-45V28l30-11Z" stroke="#e4fbff" stroke-opacity=".55" stroke-width="1.5"/>
+                                <rect x="34" y="48" width="32" height="28" rx="6" fill="#0b2444" stroke="#c6f8ff" stroke-width="2"/>
+                                <path d="M40 48v-8a10 10 0 0 1 20 0v8" stroke="#e3fbff" stroke-width="4" stroke-linecap="round"/>
+                                <circle cx="50" cy="60" r="3.5" fill="#51e7ff"/>
+                                <path d="M50 64v5" stroke="#51e7ff" stroke-width="3" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="tvShieldGradient" x1="12" y1="7" x2="88" y2="108">
+                                        <stop stop-color="#3edcff"/>
+                                        <stop offset=".55" stop-color="#477bff"/>
+                                        <stop offset="1" stop-color="#9560f4"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="tv-art-status"><span>✓</span> ACCESS CONTROL</div>
+                        <div class="tv-art-caption">PROTECTED WORKSPACE</div>
                     </div>
                 </section>
 
                 <section class="tv-section-heading">
-                    <h2>Account Overview</h2>
-                    <p>Your access and security information</p>
+                    <div>
+                        <h2>Account Overview</h2>
+                        <p>A quick look at your account and access status</p>
+                    </div>
+                    <span class="tv-overview-tag">ACCOUNT</span>
                 </section>
 
                 <section class="tv-stats">
-                    <article class="tv-stat">
-                        <div class="tv-stat-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="12" cy="7" r="4"/>
-                                <path d="M4 21v-2a8 8 0 0 1 16 0v2z"/>
-                            </svg>
+                    <article class="tv-stat tv-stat-role">
+                        <div class="tv-stat-top">
+                            <div class="tv-stat-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="7" r="4"/>
+                                    <path d="M4 21v-2a8 8 0 0 1 16 0v2z"/>
+                                </svg>
+                            </div>
+                            <span class="tv-stat-indicator">PROFILE</span>
                         </div>
                         <div class="tv-stat-label">ACCOUNT ROLE</div>
                         <div class="tv-stat-value">{{ current_user.role }}</div>
+                        <small class="tv-stat-note">Your workspace access level</small>
                     </article>
 
-                    <article class="tv-stat">
-                        <div class="tv-stat-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M2 12h4l3-8 5 16 3-8h5"/>
-                            </svg>
+                    <article class="tv-stat tv-stat-active">
+                        <div class="tv-stat-top">
+                            <div class="tv-stat-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12h4l3-8 5 16 3-8h5"/>
+                                </svg>
+                            </div>
+                            <span class="tv-stat-indicator">LIVE</span>
                         </div>
                         <div class="tv-stat-label">ACCOUNT STATUS</div>
                         <div class="tv-stat-value tv-success">Active</div>
+                        <small class="tv-stat-note">You are signed in</small>
                     </article>
 
-                    <article class="tv-stat">
-                        <div class="tv-stat-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/>
-                                <path d="m8.5 12 2.3 2.3 4.7-4.8"/>
-                            </svg>
+                    <article class="tv-stat tv-stat-security">
+                        <div class="tv-stat-top">
+                            <div class="tv-stat-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/>
+                                    <path d="m8.5 12 2.3 2.3 4.7-4.8"/>
+                                </svg>
+                            </div>
+                            <span class="tv-stat-indicator">GUARD</span>
                         </div>
-                        <div class="tv-stat-label">SECURITY</div>
+                        <div class="tv-stat-label">WORKSPACE</div>
                         <div class="tv-stat-value">Protected</div>
+                        <small class="tv-stat-note">Access-controlled workspace</small>
                     </article>
                 </section>
 
                 <section class="tv-section-heading tv-quick-heading">
-                    <h2>Quick Access</h2>
-                    <p>Navigate to your available workspaces</p>
+                    <div>
+                        <h2>Quick Access</h2>
+                        <p>Jump straight into your available workspaces</p>
+                    </div>
+                    <span class="tv-overview-tag">SHORTCUTS</span>
                 </section>
 
                 <section class="tv-actions">
+
                     {% if current_user.role == "Administrator" %}
                     <a class="tv-action-card" href="{{ url_for('auth.admin_dashboard') }}">
                         <span class="tv-action-icon">
@@ -166,9 +260,7 @@
                             <strong>Administrator Console</strong>
                             <small>Manage and monitor the platform</small>
                         </span>
-                        <span class="tv-arrow">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                        </span>
+                        <span class="tv-arrow">→</span>
                     </a>
                     {% endif %}
 
@@ -182,32 +274,41 @@
                         </span>
                         <span class="tv-action-copy">
                             <strong>Document Owner Workspace</strong>
-                            <small>Manage documents and access</small>
+                            <small>Manage your document workspace</small>
                         </span>
-                        <span class="tv-arrow">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                        </span>
+                        <span class="tv-arrow">→</span>
                     </a>
-                    {% endif %}
 
-                    {% if current_user.role in ["Document Owner", "Administrator"] %}
                     <a class="tv-action-card" href="{{ url_for('documents.upload_page') }}">
+                        <span class="tv-action-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 16V4m-5 5 5-5 5 5"/>
+                                <path d="M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+                            </svg>
+                        </span>
                         <span class="tv-action-copy">
                             <strong>Upload Document</strong>
-                            <small>Securely add a new document</small>
-                        </span>
-                        <span class="tv-arrow">→</span>
-                    </a>
-
-                    <a class="tv-action-card" href="{{ url_for('documents.my_documents') }}">
-                        <span class="tv-action-copy">
-                            <strong>My Documents</strong>
-                            <small>View and manage your documents</small>
+                            <small>Add a document to private storage</small>
                         </span>
                         <span class="tv-arrow">→</span>
                     </a>
                     {% endif %}
-                    <a class="tv-action-card" href="{{ url_for('auth.logout') }}">
+
+                    <a class="tv-action-card" href="{{ url_for('documents.my_documents') }}">
+                        <span class="tv-action-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6M8 13h8M8 17h5"/>
+                            </svg>
+                        </span>
+                        <span class="tv-action-copy">
+                            <strong>My Documents</strong>
+                            <small>Open your document list</small>
+                        </span>
+                        <span class="tv-arrow">→</span>
+                    </a>
+
+                    <a class="tv-action-card tv-action-logout" href="{{ url_for('auth.logout') }}">
                         <span class="tv-action-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M10 17l5-5-5-5M15 12H3"/>
@@ -218,14 +319,9 @@
                             <strong>Sign Out</strong>
                             <small>Securely end your session</small>
                         </span>
-                        <span class="tv-arrow">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                        </span>
+                        <span class="tv-arrow">→</span>
                     </a>
                 </section>
-
-
-
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -233,28 +329,54 @@
                             {% for category, message in messages %}
                                 <div class="tv-flash tv-flash-{{ category }}">
                                     <span>{{ message }}</span>
-                                    <button type="button" onclick="this.parentElement.remove()">Ã—</button>
+                                    <button type="button" aria-label="Dismiss message" onclick="this.parentElement.remove()">&times;</button>
                                 </div>
                             {% endfor %}
                         </div>
                     {% endif %}
                 {% endwith %}
+
                 <footer class="tv-footer">
                     <span></span>
                     <p>TrustVault Guard <b>|</b> Secure Document Sharing</p>
                     <span></span>
                 </footer>
+
             </div>
         </main>
     </div>
 </div>
 
+<script>
+(() => {
+    const toggle = document.getElementById("tvMenuToggle");
+    const sidebar = document.getElementById("tvSidebar");
+    const overlay = document.getElementById("tvSidebarOverlay");
+
+    if (!toggle || !sidebar || !overlay) return;
+
+    function setMenu(open) {
+        sidebar.classList.toggle("tv-sidebar-open", open);
+        overlay.classList.toggle("tv-overlay-visible", open);
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+        document.body.classList.toggle("tv-menu-active", open);
+    }
+
+    toggle.addEventListener("click", () => {
+        setMenu(!sidebar.classList.contains("tv-sidebar-open"));
+    });
+
+    overlay.addEventListener("click", () => setMenu(false));
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") setMenu(false);
+    });
+
+    sidebar.querySelectorAll("a").forEach(link => {
+        link.addEventListener("click", () => setMenu(false));
+    });
+})();
+</script>
 </body>
 </html>
-
-
-
-
-
-
-

@@ -10,9 +10,12 @@ login_manager = LoginManager()
 csrf = CSRFProtect()
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    if test_config:
+        app.config.update(test_config)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -27,7 +30,10 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(User, int(user_id))
+        try:
+            return db.session.get(User, int(user_id))
+        except (TypeError, ValueError):
+            return None
 
     from app.auth.routes import auth
     from app.documents.routes import documents
@@ -39,4 +45,3 @@ def create_app():
         db.create_all()
 
     return app
-

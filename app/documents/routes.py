@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory
 from flask_login import login_required, current_user
@@ -8,6 +8,8 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from app.documents.models import Document
+from app.auth.models import User
+from app.documents.permissions import DocumentPermission
 from app.audit.utils import log_audit_event
 
 documents = Blueprint("documents", __name__, url_prefix="/documents")
@@ -175,14 +177,31 @@ def my_documents():
 @documents.route("/download/<int:document_id>")
 @login_required
 def download_document(document_id):
-
     document = db.session.get(Document, document_id)
 
     if document is None:
         flash("Document not found.", "error")
-        return redirect(url_for("documents.my_documents"))
+        return redirect(url_for("auth.dashboard"))
 
-    if document.owner_id != current_user.id:
+    is_owner = document.owner_id == current_user.id
+
+    permission = None
+    if not is_owner:
+        permission = DocumentPermission.query.filter_by(
+            document_id=document.id,
+            user_id=current_user.id,
+            is_active=True
+        ).first()
+
+    has_download_access = (
+        is_owner or
+        (
+            permission is not None and
+            permission.permission in {"download", "edit"}
+        )
+    )
+
+    if not has_download_access:
         log_audit_event(
             user_id=current_user.id,
             document_id=document.id,
@@ -191,7 +210,7 @@ def download_document(document_id):
         )
 
         flash("You are not authorized to download this document.", "error")
-        return redirect(url_for("documents.my_documents"))
+        return redirect(url_for("auth.dashboard"))
 
     upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
 
@@ -208,8 +227,6 @@ def download_document(document_id):
         as_attachment=True,
         download_name=document.original_filename
     )
-
-
 @documents.route("/upload", methods=["GET"])
 @login_required
 def upload_page():
@@ -218,3 +235,107 @@ def upload_page():
         return redirect(url_for("auth.dashboard"))
 
     return render_template("documents/upload.html")
+
+
+
+
+@documents.route("/share/<int:document_id>", methods=["POST"])
+@login_required
+def share_document(document_id):
+    document = db.session.get(Document, document_id)
+
+    if document is None or document.owner_id != current_user.id:
+        flash("You are not authorized to share this document.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    username = request.form.get("username", "").strip()
+    permission_level = request.form.get("permission", "").strip().lower()
+
+    if permission_level not in {"view", "download", "edit"}:
+        flash("Invalid permission selected.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    recipient = User.query.filter_by(
+        username=username,
+        is_active=True
+    ).first()
+
+    if recipient is None or recipient.id == current_user.id:
+        flash("Please enter a valid recipient username.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    try:
+        existing = DocumentPermission.query.filter_by(
+            document_id=document.id,
+            user_id=recipient.id
+        ).first()
+
+        if existing:
+            existing.permission = permission_level
+            existing.granted_by = current_user.id
+            existing.is_active = True
+            existing.revoked_at = None
+        else:
+            db.session.add(DocumentPermission(
+                document_id=document.id,
+                user_id=recipient.id,
+                permission=permission_level,
+                granted_by=current_user.id,
+                is_active=True
+            ))
+
+        log_audit_event(
+            user_id=current_user.id,
+            document_id=document.id,
+            action="PERMISSION_GRANTED",
+            details=f"Granted {permission_level} permission to user ID {recipient.id}"
+        )
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Document sharing failed")
+        flash("Unable to share document.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    flash("Document shared successfully.", "success")
+    return redirect(url_for("documents.my_documents"))
+
+
+@documents.route("/revoke/<int:document_id>/<int:user_id>", methods=["POST"])
+@login_required
+def revoke_document_access(document_id, user_id):
+    document = db.session.get(Document, document_id)
+
+    if document is None or document.owner_id != current_user.id:
+        flash("You are not authorized to revoke access.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    permission = DocumentPermission.query.filter_by(
+        document_id=document.id,
+        user_id=user_id,
+        is_active=True
+    ).first()
+
+    if permission is None:
+        flash("Active permission not found.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    try:
+        permission.is_active = False
+        permission.revoked_at = datetime.now(timezone.utc)
+
+        log_audit_event(
+            user_id=current_user.id,
+            document_id=document.id,
+            action="PERMISSION_REVOKED",
+            details=f"Revoked access for user ID {user_id}"
+        )
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Permission revocation failed")
+        flash("Unable to revoke access.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    flash("Document access revoked successfully.", "success")
+    return redirect(url_for("documents.my_documents"))

@@ -6,6 +6,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.auth.models import User
 from app import db
 from app.documents.models import Document
+from app.audit.utils import verify_audit_chain
 
 auth = Blueprint("auth", __name__)
 
@@ -96,7 +97,11 @@ def dashboard():
 @auth.route("/admin")
 @role_required("Administrator")
 def admin_dashboard():
-    return render_template("admin_dashboard.html")
+    audit_integrity = verify_audit_chain()
+    return render_template(
+        "admin_dashboard.html",
+        audit_integrity=audit_integrity
+    )
 
 
 @auth.route("/owner")
@@ -104,3 +109,41 @@ def admin_dashboard():
 def owner_dashboard():
     document_count = Document.query.filter_by(owner_id=current_user.id).count()
     return render_template("owner_dashboard.html", document_count=document_count)
+
+@auth.route("/history")
+@login_required
+def my_history():
+    from sqlalchemy import or_
+    from app.audit.models import AuditLog
+
+    history_query = (
+        db.session.query(AuditLog, User.username, Document.name)
+        .outerjoin(User, AuditLog.user_id == User.id)
+        .outerjoin(Document, AuditLog.document_id == Document.id)
+    )
+
+    if current_user.role == "Administrator":
+        pass
+    elif current_user.role == "Document Owner":
+        history_query = history_query.filter(
+            or_(
+                AuditLog.user_id == current_user.id,
+                Document.owner_id == current_user.id
+            )
+        )
+    else:
+        history_query = history_query.filter(
+            AuditLog.user_id == current_user.id
+        )
+
+    history_entries = (
+        history_query
+        .order_by(AuditLog.timestamp.desc())
+        .limit(200)
+        .all()
+    )
+
+    return render_template(
+        "history.html",
+        history_entries=history_entries
+    )

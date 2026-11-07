@@ -35,6 +35,35 @@
     <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">PLATFORM STATUS</div><div class="tv-stat-value">Active</div></article>
   </section>
 
+
+  <section class="tv-section-heading">
+    <h2>Audit Trail Integrity</h2>
+    <p>Live verification of the SHA-256 audit hash chain</p>
+  </section>
+
+  <section class="tv-stats">
+    <article class="tv-stat">
+      <div class="tv-stat-label">CHAIN STATUS</div>
+      <div class="tv-stat-value {% if audit_integrity.valid %}tv-success{% else %}tv-danger{% endif %}">
+        {{ "Valid" if audit_integrity.valid else "Integrity Alert" }}
+      </div>
+    </article>
+    <article class="tv-stat">
+      <div class="tv-stat-label">VERIFIED EVENTS</div>
+      <div class="tv-stat-value">{{ audit_integrity.total }}</div>
+    </article>
+    <article class="tv-stat">
+      <div class="tv-stat-label">BROKEN EVENT ID</div>
+      <div class="tv-stat-value">
+        {{ audit_integrity.broken_event_id if audit_integrity.broken_event_id is not none else "None" }}
+      </div>
+    </article>
+  </section>
+
+  <section class="tv-section-heading">
+    <p>{{ audit_integrity.message }}</p>
+  </section>
+
   <section class="tv-section-heading"><h2>Quick Access</h2><p>Navigate through the administrator workspace</p></section>
   <section class="tv-actions">
     <a class="tv-action-card" href="{{ url_for('auth.dashboard') }}"><span class="tv-action-icon">?</span><span><strong>Back to Dashboard</strong><small>Return to your secure workspace</small></span><span class="tv-arrow">?</span></a>
