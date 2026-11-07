@@ -42,3 +42,5 @@ class Document(db.Model):
         "User",
         backref=db.backref("documents", lazy=True)
     )
+
+    deleted_at = db.Column(db.DateTime, nullable=True)

@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Documents | TrustVault Guard</title>
+    <title>{{ "Shared With Me" if shared_mode else "My Documents" }} | TrustVault Guard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .doc-page { max-width: 1100px; margin: 40px auto; padding: 24px; }
@@ -24,14 +24,32 @@
         }
         .doc-pagination { display: flex; gap: 16px; margin-top: 24px; align-items: center; }
         .doc-muted { color: #94a3b8; }
+        .doc-mode-links { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .doc-permission {
+            display: inline-block; padding: 5px 10px; border-radius: 6px;
+            background: #1e293b; color: #93c5fd; text-transform: capitalize;
+        }
     </style>
 </head>
 <body>
 <main class="doc-page">
-    <h1>My Documents</h1>
-    <p class="doc-muted">Search and manage your uploaded documents.</p>
+    <h1>{{ "Shared With Me" if shared_mode else "My Documents" }}</h1>
+    <p class="doc-muted">
+        {% if shared_mode %}
+            Documents other users have shared with you.
+        {% else %}
+            Search and manage your uploaded documents.
+        {% endif %}
+    </p>
 
-    <form method="GET" action="{{ url_for('documents.my_documents') }}" class="doc-filters">
+    <div class="doc-mode-links">
+        <a class="doc-link" href="{{ url_for('documents.my_documents') }}">My Documents</a>
+        <a class="doc-link" href="{{ url_for('documents.shared_with_me') }}">Shared With Me</a>
+    </div>
+
+    {% set list_endpoint = 'documents.shared_with_me' if shared_mode else 'documents.my_documents' %}
+
+    <form method="GET" action="{{ url_for(list_endpoint) }}" class="doc-filters">
         <input type="search" name="q" placeholder="Search filename"
                value="{{ search }}" maxlength="100">
 
@@ -46,7 +64,7 @@
 
         <input type="date" name="date" value="{{ date_filter }}">
         <button type="submit">Apply Filters</button>
-        <a class="doc-link" href="{{ url_for('documents.my_documents') }}">Clear</a>
+        <a class="doc-link" href="{{ url_for(list_endpoint) }}">Clear</a>
     </form>
 
     <p class="doc-muted">Total matching documents: {{ total_documents }}</p>
@@ -59,6 +77,9 @@
                     <th>Name</th>
                     <th>Category</th>
                     <th>Uploaded Date</th>
+                    {% if shared_mode %}
+                    <th>My Permission</th>
+                    {% endif %}
                     <th>Action</th>
                 </tr>
             </thead>
@@ -68,11 +89,51 @@
                     <td>{{ document.name }}</td>
                     <td>{{ document.category }}</td>
                     <td>{{ document.uploaded_at.strftime("%Y-%m-%d") }}</td>
+                    {% if shared_mode %}
                     <td>
+                        <span class="doc-permission">{{ document.current_permission }}</span>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <a class="doc-link"
+                           href="{{ url_for('documents.view_document', document_id=document.id) }}"
+                           target="_blank" rel="noopener noreferrer">
+                            View
+                        </a>
+
+                        {% if not shared_mode or document.current_permission in ["download", "edit"] %}
                         <a class="doc-link"
                            href="{{ url_for('documents.download_document', document_id=document.id) }}">
                             Download
                         </a>
+                        {% endif %}
+
+                        {% if not shared_mode and document.owner_id == current_user.id %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #93c5fd;">Edit Details</summary>
+                            <form method="POST"
+                                  action="{{ url_for('documents.edit_document', document_id=document.id) }}"
+                                  style="margin-top: 10px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="text" name="name" value="{{ document.name }}"
+                                       maxlength="255" required placeholder="Document name">
+                                <input type="text" name="category" value="{{ document.category }}"
+                                       maxlength="100" required placeholder="Category">
+                                <button class="doc-link" type="submit">Save Changes</button>
+                            </form>
+                        </details>
+
+                        <form method="POST"
+                              action="{{ url_for('documents.delete_document', document_id=document.id) }}"
+                              onsubmit="return confirm('Are you sure you want to delete this document?');"
+                              style="margin-top: 10px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="doc-link" type="submit"
+                                    style="background: #b91c1c;">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -82,13 +143,13 @@
 
     <nav class="doc-pagination">
         {% if page > 1 %}
-        <a href="{{ url_for('documents.my_documents', q=search, category=category, date=date_filter, page=page-1) }}">Previous</a>
+        <a href="{{ url_for(list_endpoint, q=search, category=category, date=date_filter, page=page-1) }}">Previous</a>
         {% endif %}
 
         <span>Page {{ page }} of {{ total_pages }}</span>
 
         {% if page < total_pages %}
-        <a href="{{ url_for('documents.my_documents', q=search, category=category, date=date_filter, page=page+1) }}">Next</a>
+        <a href="{{ url_for(list_endpoint, q=search, category=category, date=date_filter, page=page+1) }}">Next</a>
         {% endif %}
     </nav>
     {% else %}
