@@ -108,6 +108,25 @@
                         </a>
                         {% endif %}
 
+                        {% if (not shared_mode and document.owner_id == current_user.id) or (shared_mode and document.current_permission == "edit") %}
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #34d399;">Replace Content</summary>
+                            <form method="POST"
+                                  enctype="multipart/form-data"
+                                  action="{{ url_for('documents.replace_document_content', document_id=document.id) }}"
+                                  style="margin-top: 10px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="file" name="file"
+                                       accept=".pdf,.txt,.png,.jpg,.jpeg,.doc,.docx"
+                                       required>
+                                <button class="doc-link" type="submit"
+                                        style="background: #047857;">
+                                    Upload Replacement
+                                </button>
+                            </form>
+                        </details>
+                        {% endif %}
+
                         {% if not shared_mode and document.owner_id == current_user.id %}
                         <details style="margin-top: 10px;">
                             <summary style="cursor: pointer; color: #93c5fd;">Edit Details</summary>

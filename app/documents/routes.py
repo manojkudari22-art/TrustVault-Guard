@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -610,4 +610,104 @@ def delete_document(document_id):
         return redirect(url_for("documents.my_documents"))
 
     flash("Document deleted successfully.", "success")
+    return redirect(url_for("documents.my_documents"))
+
+@documents.route("/replace/<int:document_id>", methods=["POST"])
+@login_required
+def replace_document_content(document_id):
+    document = db.session.get(Document, document_id)
+
+    if document is None or document.deleted_at is not None:
+        flash("Document not found.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    is_owner = document.owner_id == current_user.id
+
+    permission = None
+    if not is_owner:
+        permission = DocumentPermission.query.filter_by(
+            document_id=document.id,
+            user_id=current_user.id,
+            is_active=True
+        ).first()
+
+    can_replace = (
+        is_owner or
+        (permission is not None and permission.permission == "edit")
+    )
+
+    if not can_replace:
+        log_audit_event(
+            user_id=current_user.id,
+            document_id=document.id,
+            action="ACCESS_DENIED",
+            details="Unauthorized document content replacement attempt"
+        )
+        flash("You are not authorized to replace this document.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    uploaded_file = request.files.get("file")
+
+    if not uploaded_file or not uploaded_file.filename:
+        flash("Please select a replacement file.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    original_filename = secure_filename(uploaded_file.filename)
+
+    if not original_filename or not allowed_file(
+        original_filename, uploaded_file.mimetype
+    ):
+        flash("File type is not allowed.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    extension = original_filename.rsplit(".", 1)[1].lower()
+    new_stored_filename = f"{uuid.uuid4().hex}.{extension}"
+
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_folder.mkdir(parents=True, exist_ok=True)
+
+    new_file_path = upload_folder / new_stored_filename
+    old_file_path = upload_folder / document.stored_filename
+
+    old_stored_filename = document.stored_filename
+    old_original_filename = document.original_filename
+
+    try:
+        uploaded_file.save(new_file_path)
+
+        document.stored_filename = new_stored_filename
+        document.original_filename = original_filename
+
+        log_audit_event(
+            user_id=current_user.id,
+            document_id=document.id,
+            action="DOCUMENT_CONTENT_REPLACED",
+            details=(
+                f"Replaced document content. "
+                f"Previous file: {old_original_filename}; "
+                f"New file: {original_filename}"
+            )
+        )
+
+    except Exception:
+        db.session.rollback()
+        new_file_path.unlink(missing_ok=True)
+        current_app.logger.exception("Document content replacement failed")
+        flash("Unable to replace document content.", "error")
+        return redirect(url_for("documents.my_documents"))
+
+    try:
+        if old_file_path.exists():
+            old_file_path.unlink()
+    except OSError:
+        current_app.logger.exception(
+            "Old file cleanup failed for document ID %s", document.id
+        )
+        flash(
+            "Document replaced, but old file cleanup needs attention.",
+            "warning"
+        )
+        return redirect(url_for("documents.my_documents"))
+
+    flash("Document content replaced successfully.", "success")
     return redirect(url_for("documents.my_documents"))

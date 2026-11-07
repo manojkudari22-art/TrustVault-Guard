@@ -1,8 +1,10 @@
-﻿from pathlib import Path
+import io
+from pathlib import Path
 
 import pytest
 
 from app import create_app, db
+from app.audit.models import AuditLog
 from app.auth.models import User
 from app.documents.models import Document
 from app.documents.permissions import DocumentPermission
@@ -343,4 +345,183 @@ def test_deleted_document_cannot_be_previewed_or_downloaded(client, app):
 
     assert preview.status_code == 404
     assert download.status_code == 302
+
+
+def test_document_owner_can_replace_content(client, app):
+    register_user(client, "replaceowner")
+    document_id, old_content = create_document(app, "replaceowner")
+    login_user(client, "replaceowner")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"New owner replacement content"),
+                "replacement.pdf",
+                "application/pdf",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.name == "Security Test Report"
+        assert document.original_filename == "replacement.pdf"
+        new_filename = document.stored_filename
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="DOCUMENT_CONTENT_REPLACED",
+        ).first()
+        assert event is not None
+
+    new_path = Path(app.config["UPLOAD_FOLDER"], new_filename)
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "replaceowner-test.pdf",
+    )
+
+    assert new_path.read_bytes() == b"New owner replacement content"
+    assert not old_path.exists()
+
+
+def test_edit_permission_user_can_replace_content(client, app):
+    register_user(client, "replaceowner2")
+    register_user(client, "replaceeditor")
+
+    document_id, _ = create_document(
+        app,
+        "replaceowner2",
+        "replaceeditor",
+        permission="edit",
+    )
+
+    login_user(client, "replaceeditor")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"Editor replacement content"),
+                "editor-replacement.pdf",
+                "application/pdf",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.name == "Security Test Report"
+        assert document.original_filename == "editor-replacement.pdf"
+        new_filename = document.stored_filename
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="DOCUMENT_CONTENT_REPLACED",
+        ).first()
+        assert event is not None
+        assert event.user_id == User.query.filter_by(
+            username="replaceeditor"
+        ).first().id
+
+    new_path = Path(app.config["UPLOAD_FOLDER"], new_filename)
+    assert new_path.read_bytes() == b"Editor replacement content"
+
+
+@pytest.mark.parametrize(
+    ("permission", "active"),
+    [
+        ("view", True),
+        ("download", True),
+        ("edit", False),
+    ],
+)
+def test_users_without_active_edit_permission_cannot_replace_content(
+    client, app, permission, active
+):
+    register_user(client, "deniedreplaceowner")
+    register_user(client, "deniedreplaceuser")
+
+    document_id, old_content = create_document(
+        app,
+        "deniedreplaceowner",
+        "deniedreplaceuser",
+        permission=permission,
+        active=active,
+    )
+
+    login_user(client, "deniedreplaceuser")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"Unauthorized replacement"),
+                "attack.pdf",
+                "application/pdf",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "deniedreplaceowner-test.pdf"
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="ACCESS_DENIED",
+        ).first()
+        assert event is not None
+
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "deniedreplaceowner-test.pdf",
+    )
+    assert old_path.read_bytes() == old_content
+    assert not Path(
+        app.config["UPLOAD_FOLDER"],
+        "attack.pdf",
+    ).exists()
+
+
+def test_replacement_rejects_disallowed_file_type(client, app):
+    register_user(client, "invalidreplaceowner")
+    document_id, old_content = create_document(
+        app, "invalidreplaceowner"
+    )
+
+    login_user(client, "invalidreplaceowner")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (
+                io.BytesIO(b"Executable content"),
+                "malware.exe",
+                "application/octet-stream",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "invalidreplaceowner-test.pdf"
+
+    old_path = Path(
+        app.config["UPLOAD_FOLDER"],
+        "invalidreplaceowner-test.pdf",
+    )
+    assert old_path.read_bytes() == old_content
 
