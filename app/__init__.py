@@ -1,4 +1,5 @@
-﻿from datetime import timezone
+﻿import os
+from datetime import timezone
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -26,6 +27,15 @@ def create_app(test_config=None):
 
     if test_config:
         app.config.update(test_config)
+
+    database_uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    if database_uri.startswith("sqlite:///"):
+        database_path = database_uri.replace("sqlite:///", "", 1)
+        database_directory = os.path.dirname(database_path)
+        if database_directory:
+            os.makedirs(database_directory, exist_ok=True)
+
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     db.init_app(app)
     login_manager.init_app(app)
