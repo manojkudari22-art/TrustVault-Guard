@@ -169,7 +169,9 @@ Default deny: Unless access is explicitly granted, the user must not access the 
 ### Day 6 Security Validation and Remaining Gaps
 - Administrator dashboard and Upload page access verified.
 - Viewer Upload and My Documents route access blocked.
+- Unauthenticated Upload access redirected to the Login page.
+- Full automated test suite completed successfully: 77 tests passed.
 - Existing user and database records preserved during test-client checks.
-- Full pytest suite did not complete because duplicate project test collection caused an import error.
-- Actual file upload, download, audit persistence, and complete document lifecycle testing remain pending.
-- Further review of dashboard link rendering is required.
+- Dashboard response contained the My Documents URL despite the visible link text being absent; further investigation is required.
+- Live production deployment and deployed-environment verification remain pending.
+- AI-assisted permission suggestions with mandatory Document Owner approval remain to be implemented.
