@@ -1,177 +1,310 @@
-﻿# TrustVault Guard Threat Model
+﻿# TrustVault Guard - Security Threat Analysis
 
-## Assets
-- Confidential documents
-- User credentials
-- Document permissions
-- Audit records
+## 1. Project Information
 
-## Threats
-1. Unauthorized user reads a confidential document.
-2. User downloads a document after permission is revoked.
-3. Attacker uploads a malicious file.
-4. User changes document permissions without authorization.
-5. Attacker tampers with audit records.
-6. Attacker accesses another user's account.
+- **Project:** TrustVault Guard - Secure Document Sharing
+- **Challenge:** Snovasys Fresher Hiring Challenge 2026
+- **Application:** Python Flask-based document-sharing platform
+- **Database:** SQLite
+- **AI Service:** Ollama - Llama 3.2
+- **Security Review Date:** November 9, 2026
 
-## Mitigations
-1. Check permissions on every document request.
-2. Store files outside the public web directory.
-3. Hash passwords using a secure password hashing algorithm.
-4. Validate uploaded file types and sizes.
-5. Use centralized authorization logic.
-6. Record security-sensitive actions in audit logs.
-7. Test access control with automated tests.
+## 2. Security Objective
 
-## Security Principle
-Default deny: Unless access is explicitly granted, the user must not access the document.
+TrustVault Guard is designed to prevent unauthorized users from accessing confidential documents and to maintain traceable records of important application activities.
 
-## 2026-11-02 — Day 2: Authentication and Roles
+This threat analysis identifies security risks affecting authentication, authorization, document storage, permission management, AI-assisted recommendations, and audit integrity.
 
-### Threat: Unauthorized account access
-**Risk:** An attacker may try to access another user's account using incorrect credentials.
+The objective is to document the implemented security controls, their verification approach, and the remaining limitations.
 
-**Mitigation:** Passwords are stored as hashes. Login validates the submitted password against the stored hash.
+## 3. Protected Assets
 
-**Status:** Basic protection implemented. Account lockout and rate limiting are pending.
+The following assets require protection:
 
-### Threat: Privilege escalation
-**Risk:** A Viewer may attempt to access Administrator or Document Owner routes.
+- User accounts and authentication credentials.
+- Confidential documents and uploaded files.
+- Document ownership and permission records.
+- User roles and account information.
+- Audit records and hash-chain integrity.
+- AI permission recommendation inputs and outputs.
+- Application configuration and database contents.
 
-**Mitigation:** Protected routes check the authenticated user's role on the server.
+## 4. Threat Actors
 
-**Validation:** Tests confirm that Viewers receive HTTP 403 when accessing protected Admin and Owner routes.
+Potential threat actors include:
 
-### Threat: Unauthorized role assignment
-**Risk:** A user may attempt to register with elevated privileges.
+- Unauthenticated visitors attempting to access protected resources.
+- Authenticated users attempting to access documents without permission.
+- Viewers attempting unauthorized document modifications.
+- Malicious users uploading unsafe or unsupported files.
+- Users attempting to manipulate document permissions.
+- Attackers attempting to modify or delete audit records.
+- Users attempting to influence AI recommendations through manipulated input.
 
-**Mitigation:** New registrations receive the Viewer role by default. Role selection is not exposed in the registration form.
+## 5. Main Security Threats and Mitigations
 
-**Status:** Implemented. Secure administrator-managed role assignment is pending.
+### Threat 1: Unauthorized Account Access
 
-### Threat: Session misuse
-**Risk:** An unauthenticated user may attempt to access protected dashboards.
+**Risk:** An attacker may attempt to access another user's account using stolen or guessed credentials.
 
-**Mitigation:** Flask-Login requires authentication before protected dashboard access.
+**Potential Impact:**
+- Unauthorized access to confidential documents.
+- Misuse of document permissions.
+- Exposure of account information.
 
-**Validation:** Authentication tests verify protected route access.
+**Implemented Mitigations:**
+- Passwords are stored using Werkzeug password hashing.
+- Password verification uses the stored password hash.
+- Registration requires username, email, and password.
+- Passwords must contain at least eight characters.
+- Login checks whether the account is active.
+- Invalid login attempts receive a generic authentication error.
+- Password changes require the current password.
 
-### Day 2 Security Validation
-- Authentication tests passed: 8/8.
-- Role-based access checks are enforced server-side.
-- Further security hardening is pending.
+**Verification:**
+- Authentication tests validate login and password handling.
+- Account access is protected through Flask-Login.
 
+### Threat 2: Unauthorized Role Assignment
 
-## 2026-11-04 — Day 4: Document Management
+**Risk:** A user may attempt to register with administrator privileges or access administrator-only functionality.
 
-### Threat: Malicious or invalid file uploads
-**Risk:** An attacker may upload an unsupported file type disguised with a misleading filename or MIME type.
+**Potential Impact:**
+- Unauthorized administrative access.
+- Exposure of platform activity and user information.
+- Abuse of privileged operations.
 
-**Mitigation:** The upload route checks the file extension and MIME type against an allowed-file list.
+**Implemented Mitigations:**
+- Public registration accepts only Viewer and Document Owner roles.
+- Administrator is excluded from the public registration role allowlist.
+- Role-based route protection checks the authenticated user's role.
+- Administrator-only functionality is protected by server-side authorization.
 
-**Status:** Basic server-side validation implemented. Additional content inspection and security testing are pending.
+**Verification:**
+- Registration and role authorization tests.
+- Role-based route access checks.
 
-### Threat: Stored filename collision or filename manipulation
-**Risk:** User-controlled filenames may cause collisions or create unsafe storage paths.
+### Threat 3: Unauthorized Document Access
 
-**Mitigation:** The application generates UUID-based server-side filenames and uses sanitized original filenames for document metadata.
+**Risk:** A user may attempt to view or download a document without ownership or an active permission.
 
-**Status:** Implemented in the upload flow. Path-handling security testing is pending.
+**Potential Impact:**
+- Confidential information disclosure.
+- Unauthorized document distribution.
+- Loss of document confidentiality.
 
-### Threat: Unauthorized document upload
-**Risk:** A Viewer may attempt to upload documents without the required role.
+**Implemented Mitigations:**
+- Protected document routes require authentication.
+- Document ownership is checked on sensitive operations.
+- Document-level permissions are checked before viewing or downloading.
+- Download access requires download or edit permission.
+- View access accepts the permitted view, download, or edit levels.
+- Unauthorized attempts are recorded as access-denied audit events.
+- Deleted documents are excluded from normal access.
 
-**Mitigation:** The upload route checks the authenticated user's role and permits only Document Owner and Administrator roles.
+**Verification:**
+- Document authorization tests.
+- Unauthorized access and download test cases.
 
-**Status:** Implemented. Negative authorization tests are pending.
+### Threat 4: Unauthorized Document Modification or Deletion
 
-### Threat: Missing document audit trail
-**Risk:** Document upload activity may not be traceable during a security review.
+**Risk:** A user may attempt to modify, replace, or delete documents owned by another user.
 
-**Mitigation:** The upload flow integrates audit-event logging for document uploads.
+**Potential Impact:**
+- Loss of document integrity.
+- Unauthorized changes to confidential information.
+- Accidental or malicious document removal.
 
-**Status:** Integrated. Audit-record persistence and completeness must still be verified.
+**Implemented Mitigations:**
+- Document ownership is checked before metadata editing and deletion.
+- Content editing requires ownership or an active edit permission.
+- Direct content editing is restricted to supported TXT and CSV files.
+- File replacement requires appropriate authorization.
+- Deleted documents are soft-deleted in the database.
+- Active document permissions are deactivated when a document is deleted.
+- Important modification and deletion events are recorded.
 
-### Day 4 Security Validation
-- Extension and MIME-type checks added to the upload route.
-- UUID-based server-side filenames implemented.
-- Upload role restrictions added.
-- Upload audit-event integration added.
-- Browser upload, document-list visibility, download authorization, and audit persistence verification remain pending.
+**Verification:**
+- Document ownership and edit authorization tests.
+- Document lifecycle and permission tests.
 
+### Threat 5: Unsafe File Uploads and Path Manipulation
 
-## 2026-11-05 — Day 5: Document Listing and Search Security
+**Risk:** An attacker may upload unsupported files or attempt to manipulate file paths and filenames.
 
-### Threat: Unauthorized document metadata disclosure
-**Risk:** A user may attempt to discover another user's document names, categories, or upload information through the listing and search interface.
+**Potential Impact:**
+- Storage of unexpected file types.
+- Unauthorized file access.
+- File path manipulation.
+- Exposure or corruption of stored files.
 
-**Mitigation:** The document listing query is scoped to the authenticated user's owner ID. The route is restricted to Document Owner and Administrator roles. Category options and document counts are also scoped to the current owner.
+**Implemented Mitigations:**
+- Uploads are restricted to an application-defined extension and MIME-type allowlist.
+- File validation also examines uploaded file content.
+- Werkzeug secure_filename is used to sanitize original filenames.
+- Stored filenames are generated separately from original filenames.
+- Uploaded files are stored in a private application upload directory.
+- File access resolves and validates storage paths before serving files.
+- Upload size is limited by application configuration.
 
-**Status:** Owner-scoped listing and filtering implemented. Dedicated cross-user access tests are pending.
+**Verification:**
+- File validation tests.
+- Upload and download authorization tests.
+- Invalid file and path-handling test cases.
 
-### Threat: Invalid search and filter input
-**Risk:** Unexpected date or page values may cause application errors or unintended query behavior.
+### Threat 6: Unauthorized Permission Changes
 
-**Mitigation:** Search input length is limited. Date values are parsed using the expected date format, and page values are converted and validated before pagination. Invalid date and page values are rejected.
+**Risk:** A user may attempt to grant, modify, or revoke document permissions without being the document owner.
 
-**Status:** Input validation implemented. Dedicated invalid-input tests are pending.
+**Potential Impact:**
+- Unauthorized document sharing.
+- Privilege escalation.
+- Continued access after permission revocation.
 
-### Threat: Document metadata exposure through pagination
-**Risk:** Pagination counts or result pages may reveal records belonging to other users if ownership restrictions are applied incorrectly.
+**Implemented Mitigations:**
+- Permission management is controlled by document ownership.
+- Only supported permission levels are accepted: view, download, and edit.
+- Recipient validation prevents invalid recipients and self-sharing.
+- Permission records maintain an active or revoked state.
+- Revocation deactivates the permission and records its revocation time.
+- Access checks consider the current active permission.
+- Permission grant and revocation activities are recorded in the audit trail.
 
-**Mitigation:** The owner restriction is applied to the document query before calculating counts, categories, and paginated results.
+**Verification:**
+- Permission grant and revocation tests.
+- Unauthorized permission-management tests.
+- Access checks after permission revocation.
 
-**Status:** Owner-scoped pagination implemented. Automated isolation tests are pending.
+### Threat 7: Audit Log Manipulation
 
-### Threat: Incorrect owner dashboard document count
-**Risk:** A dashboard may display document totals belonging to other users.
+**Risk:** An attacker with database access may attempt to modify audit records or remove evidence of important activities.
 
-**Mitigation:** The owner dashboard count query filters documents using the authenticated user's ID.
+**Potential Impact:**
+- Loss of accountability.
+- Manipulated activity history.
+- Reduced reliability of security investigations.
 
-**Status:** Owner-specific document count implemented. Multi-user verification is pending.
+**Implemented Mitigations:**
+- Important application activities are recorded as audit events.
+- Each audit event contains a SHA-256 hash.
+- Each event references the previous event hash.
+- Hash calculation includes relevant event fields and timestamps.
+- Audit-chain verification checks previous-hash continuity.
+- Event hashes are recalculated and compared during verification.
+- New audit events are not appended when existing chain verification fails.
+- Audit integrity status is exposed through administrator monitoring.
 
-### Day 5 Security Validation
-- Owner-scoped document listing and search implemented.
-- Category and date filtering implemented.
-- Pagination and query-parameter validation implemented.
-- Owner-specific document count implemented.
-- Dedicated document authorization and filter tests remain to be performed.
+**Verification:**
+- Audit event creation tests.
+- Hash-chain verification tests.
+- Modified event and broken-chain detection tests.
 
-## 2026-11-06 — Day 6: Dashboard and Role-Based Access Security
+**Security Limitation:**
+The SHA-256 hash chain provides tamper evidence. It does not provide independent immutability against an attacker who can rewrite the complete database and recalculate the entire chain. External anchoring or write-once audit storage is not currently implemented.
 
-### Threat: Unauthorized access to the Upload page
-**Risk:** A Viewer may attempt to open the document upload page directly instead of using dashboard navigation.
+### Threat 8: Unsafe AI Permission Recommendations
 
-**Mitigation:** The GET upload route requires authentication and permits only Document Owner and Administrator roles. The existing POST upload route retains its role check.
+**Risk:** AI may recommend an unsuitable recipient or excessive permission, or return malformed output.
 
-**Validation:** Administrator access returned HTTP 200. Viewer direct access returned HTTP 302 and redirected to `/dashboard`.
+**Potential Impact:**
+- Over-privileged sharing recommendations.
+- Incorrect recipient selection.
+- Misleading permission suggestions.
 
-**Status:** Role restriction verified.
+**Implemented Mitigations:**
+- AI recommendations are generated only for eligible recipients.
+- The prompt instructs the model to prefer least-privilege access.
+- Document metadata and sharing reasons are supplied as data rather than instructions.
+- The application validates the recommended username against the eligible recipient list.
+- Only view, download, and edit permissions are accepted.
+- Invalid or malformed AI responses are rejected.
+- The AI advisor returns a recommendation only.
+- Actual permission granting is handled by a separate owner-controlled operation.
+- Document owners must review and approve sharing decisions.
 
-### Threat: Unauthorized access to My Documents
-**Risk:** A Viewer may attempt to access the owner-specific document listing by entering its URL directly.
+**Verification:**
+- AI recommendation validation tests.
+- Invalid recipient and permission rejection tests.
+- Owner-controlled permission granting tests.
 
-**Mitigation:** The My Documents route checks the authenticated user's role and permits only Document Owner and Administrator roles. The document query is scoped to the current user's owner ID.
+**Security Limitation:**
+AI output is not treated as an authorization decision. Prompt instructions alone cannot guarantee that a model will always behave correctly; application-side validation and owner approval remain essential.
 
-**Validation:** Viewer direct access returned HTTP 302 and redirected to `/dashboard`.
+### Threat 9: Unauthorized Access After Revocation
 
-**Status:** Role restriction verified. Dashboard response also contained the My Documents URL despite the visible link text being absent; this requires further investigation.
+**Risk:** A previously authorized user may attempt to access a document after their permission has been revoked.
 
-### Threat: Unauthenticated access to document-management pages
-**Risk:** An unauthenticated visitor may attempt to access protected document-management routes.
+**Potential Impact:**
+- Continued unauthorized access.
+- Exposure of confidential documents.
 
-**Mitigation:** Flask-Login authentication protection is applied to the Upload and My Documents routes.
+**Implemented Mitigations:**
+- Permission revocation updates the permission's active state.
+- Document access routes check the current permission record.
+- Revoked permissions are excluded from active access queries.
+- Document deletion also deactivates associated active permissions.
 
-**Validation:** An unauthenticated Upload page request redirected to the Login page.
+**Verification:**
+- Permission revocation tests.
+- Post-revocation access-denial tests.
 
-**Status:** Basic authentication protection verified.
+## 6. Security Controls Summary
 
-### Day 6 Security Validation and Remaining Gaps
-- Administrator dashboard and Upload page access verified.
-- Viewer Upload and My Documents route access blocked.
-- Unauthenticated Upload access redirected to the Login page.
-- Full automated test suite completed successfully: 77 tests passed.
-- Existing user and database records preserved during test-client checks.
-- Dashboard response contained the My Documents URL despite the visible link text being absent; further investigation is required.
-- Live production deployment and deployed-environment verification remain pending.
-- AI-assisted permission suggestions with mandatory Document Owner approval remain to be implemented.
+| Security Area | Implemented Control |
+|---|---|
+| Authentication | Password hashing and Flask-Login |
+| Registration | Restricted public role selection |
+| Authorization | Server-side role and ownership checks |
+| File Upload | Extension, MIME-type, and content validation |
+| File Storage | Private directory and generated filenames |
+| Document Access | Document-level permission checks |
+| Permission Management | Owner-controlled grant and revocation |
+| Audit Logging | SHA-256 linked audit events |
+| Audit Verification | Hash and previous-hash validation |
+| AI Recommendations | Output validation and owner approval |
+
+## 7. Security Verification Approach
+
+Security validation focuses on the following areas:
+
+- Authentication and account handling.
+- Role-based access restrictions.
+- Document ownership enforcement.
+- Unauthorized document access prevention.
+- File upload validation.
+- Document permission granting and revocation.
+- Access denial after revocation.
+- Audit event creation and hash-chain verification.
+- AI recommendation output validation.
+- Regression testing after debugging and integration changes.
+
+**Latest Automated Test Result:** 81 tests passed on November 9, 2026.
+
+This result represents the automated test suite at the recorded verification point. It should not be interpreted as proof that every possible attack or production environment scenario has been tested.
+
+## 8. Accepted Risks and Remaining Limitations
+
+The following limitations are acknowledged:
+
+- SQLite without a configured persistent disk on Render may lose application data after restarts or redeployments.
+- Production deployment requires appropriate secret-key and persistent-storage configuration.
+- The local Ollama endpoint at 127.0.0.1:11434 is not automatically accessible from the hosted Render service.
+- Hosted AI recommendations require an appropriately configured reachable AI service.
+- The audit hash chain does not protect against complete database and chain reconstruction by a sufficiently privileged attacker.
+- No external immutable audit storage or independent hash anchoring is currently implemented.
+- Automated tests do not replace an independent penetration test or production security assessment.
+- Encryption at rest and additional infrastructure-level protections require separate production configuration and verification.
+
+## 9. Development and Security Review Timeline
+
+- **November 1–7, 2026:** Threat identification, architecture planning, authentication, authorization, private document storage, permission management, audit logging, AI recommendation controls, and initial testing.
+- **November 8, 2026:** Debugging, integration corrections, security-related fixes, and deployment troubleshooting.
+- **November 9, 2026:** Final regression testing, audit and permission verification, documentation review, and deployment validation.
+
+## 10. Conclusion
+
+TrustVault Guard applies layered security controls to protect confidential documents and maintain accountability for important application activities.
+
+The application combines authentication, role-based authorization, document-level permissions, private file storage, validated AI recommendations, and a SHA-256 tamper-evident audit chain.
+
+The documented limitations identify areas requiring additional infrastructure hardening and independent security assessment before use with highly sensitive production documents.

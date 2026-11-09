@@ -1,258 +1,190 @@
-﻿# AI Prompts Log
+﻿# TrustVault Guard - AI Assistance and Prompt History
 
-## Project
-TrustVault Guard — Secure Document Sharing with a Real Audit Trail
+## 1. Purpose
 
-## Day 1 — 2026-11-01
+This document records how AI tools supported the planning, development, debugging, testing, and documentation of TrustVault Guard for the Snovasys Fresher Hiring Challenge 2026.
 
-### Prompt 1 — Problem Analysis
+The entries are organized chronologically. They summarize the actual categories of assistance used during the project and are not presented as verbatim transcripts of every conversation.
 
-**Tool:** ChatGPT
+## 2. AI Tools Used
 
-**Prompt / Summary:**
-Analyze the Snovasys TrustVault Guard challenge problem statement. Identify the core problem, functional requirements, security requirements, user roles, and expected deliverables.
+### ChatGPT
 
-**What it produced:**
-- Initial problem statement
-- Functional and security requirements
-- User roles: Admin, Document Owner, Viewer
-- Initial project scope
+Used for:
+- Project planning and requirement breakdown.
+- Flask application architecture and implementation guidance.
+- Authentication, authorization, and document-sharing logic.
+- Debugging and integration assistance.
+- Security test planning and failure analysis.
+- Documentation preparation and deployment troubleshooting.
 
-**What was wrong:**
-The initial analysis was high-level. It did not fully map realistic attacks to security controls and automated tests. The first threat list was also too generic for the challenge's security expectations.
+### Google Gemini
 
-**What I did instead:**
-Created initial documentation in docs/PROBLEM_STATEMENT.md and docs/REQUIREMENTS.md. I will expand the threat analysis alongside implementation and map each threat to security tests.
+Used for:
+- Project planning and development discussions.
+- Reviewing security-related implementation approaches.
+- Exploring possible improvements to document-sharing controls.
 
-**Fix / Follow-up commit:**
-Pending — will link the commit after updating the threat model and tests.
+### Claude
 
----
+Used for:
+- Planning and reviewing security-related development tasks.
+- Exploring authorization and audit-trail design approaches.
+- Reviewing implementation considerations and potential weaknesses.
 
-### Prompt 2 — Architecture Planning
+## 3. Prompt and Assistance History
 
-**Tool:** ChatGPT
+### November 1, 2026 - Project Understanding and Planning
 
-**Prompt / Summary:**
-Suggest a beginner-friendly Flask architecture for TrustVault Guard using SQLite, authentication, role-based access control, private document storage, document permissions, and audit logging.
+**Objective:** Understand the challenge and establish the project direction.
 
-**What it produced:**
-- Suggested technology stack
-- Initial application modules
-- Request flow
-- Initial security design principles
+Assistance topics:
+- Break down the secure document-sharing problem statement.
+- Identify the main users, roles, and application responsibilities.
+- Plan the project architecture and technology stack.
+- Identify important security requirements.
+- Organize the development work into a seven-day schedule.
 
-**What was wrong:**
-The architecture was a starting point, not a verified secure implementation. It did not yet demonstrate that authorization would be enforced on every document operation or that audit records would be tamper-evident.
+**Outcome:** Established the TrustVault Guard project scope, core requirements, and initial development roadmap.
 
-**What I did instead:**
-Created docs/ARCHITECTURE.md as an initial design. I will verify the security design during implementation and automated testing.
+### November 2, 2026 - Architecture and Authentication
 
-**Fix / Follow-up commit:**
-Pending — will link the commit after implementing and testing the security controls.
+**Objective:** Establish the application foundation and secure user access.
 
----
+Assistance topics:
+- Organize Flask application modules and routes.
+- Design user authentication and role handling.
+- Implement password hashing and login-session management.
+- Define role-based dashboard access.
+- Identify authentication and account-related security risks.
 
-### Prompt 3 — Initial Threat Modeling
+**Outcome:** Developed the authentication foundation and role-based application structure.
 
-**Tool:** ChatGPT
+### November 3, 2026 - Document Upload and Private Storage
 
-**Prompt / Summary:**
-Identify possible threats to a secure document-sharing platform, including unauthorized document access, permission misuse, malicious uploads, and audit log tampering. Suggest practical mitigations.
+**Objective:** Implement controlled document handling.
 
-**What it produced:**
-- Initial asset list
-- Basic threat scenarios
-- Initial mitigation suggestions
-- Default-deny principle
+Assistance topics:
+- Design document metadata and storage handling.
+- Validate file extensions, MIME types, and file content.
+- Generate safe stored filenames.
+- Restrict upload operations by role.
+- Prevent unrestricted access to private uploaded files.
 
-**What was wrong:**
-The first threat model did not cover enough realistic attack scenarios, such as IDOR, privilege escalation, permission revocation bypass, unauthorized metadata search, and session abuse. It also did not map each threat to a specific automated test.
+**Outcome:** Developed the document upload and private-storage workflow with server-side validation.
 
-**What I did instead:**
-Created an initial docs/THREATS.md. I will expand it as development progresses and link each threat to its implemented protection and test.
+### November 4, 2026 - Document Permissions and Sharing
 
-**Fix / Follow-up commit:**
-Pending — will link the commit after the threat model and corresponding tests are updated.
+**Objective:** Control which users can access individual documents.
 
----
+Assistance topics:
+- Design document-level permission records.
+- Implement view, download, and edit permission checks.
+- Restrict permission changes to document owners.
+- Handle permission granting and revocation.
+- Consider unauthorized access and privilege escalation scenarios.
 
-### Prompt 4 — Initial Project Setup
+**Outcome:** Developed owner-controlled document sharing and permission enforcement.
 
-**Tool:** ChatGPT
+### November 5, 2026 - Audit Trail and Administration
 
-**Prompt / Summary:**
-Provide a step-by-step Flask project setup for TrustVault Guard, including a virtual environment, dependencies, application factory, configuration, and a basic route.
+**Objective:** Record important activities and support administrative monitoring.
 
-**What it produced:**
-- Initial project folder structure
-- Flask application setup
-- Dependency list
-- Basic application startup instructions
+Assistance topics:
+- Design audit event records.
+- Connect audit events using SHA-256 hashes.
+- Verify previous-hash continuity and event integrity.
+- Record document and permission-related activities.
+- Display audit status and activity information in the administrator dashboard.
 
-**What was wrong:**
-The initial setup only verified that Flask could run. It did not implement authentication, authorization, secure document handling, or audit logging.
+**Outcome:** Developed the tamper-evident audit-chain mechanism and administrative monitoring functionality.
 
-**What I did instead:**
-Created the initial project files, installed dependencies, ran the Flask application locally, and verified the startup page. I will implement the actual challenge features in subsequent development days.
+### November 6, 2026 - AI Permission Recommendations and Security Testing
 
-**Fix / Follow-up commit:**
-Initial setup commit: 717c82b
+**Objective:** Add AI-assisted recommendations without transferring permission authority to AI.
 
----
+Assistance topics:
+- Design an AI-assisted permission recommendation workflow.
+- Apply least-privilege principles to recommendations.
+- Validate recommended usernames against eligible recipients.
+- Validate suggested permissions against allowed permission values.
+- Keep actual permission granting under document-owner control.
+- Identify security-focused test scenarios.
 
-## AI Usage Review
+**Outcome:** Developed the AI recommendation workflow and validation approach. AI suggestions remain advisory and do not grant access automatically.
 
-AI was used for initial analysis, architecture suggestions, threat modeling, and setup guidance. AI-generated suggestions were treated as a starting point, not proof of security.
+### November 7, 2026 - Integration and Initial Validation
 
-The initial Day 1 implementation is only project setup and documentation. Security protections and automated tests are not yet implemented.
+**Objective:** Integrate the main application features and prepare the initial deployment.
 
-This log will be updated daily with dated entries, specific shortcomings, and links to commits containing corrections or improvements.
+Assistance topics:
+- Review integration between authentication, documents, permissions, and audit modules.
+- Identify missing authorization checks and inconsistent behavior.
+- Prepare automated tests for important security requirements.
+- Review project documentation and deployment configuration.
+- Investigate issues found during initial validation.
 
-## Day 2 — 2026-11-02
+**Outcome:** Completed the main feature-development phase and prepared the application for further debugging and deployment verification.
 
-### Prompt 5 — Authentication and Roles
-**Tool:** ChatGPT
+### November 8, 2026 - Debugging and Integration Corrections
 
-**Prompt / Summary:**
-I am building TrustVault Guard for the Snovasys Fresher Hiring Challenge. For Day 2, help me implement authentication and role-based access control from scratch. I need user registration, login, logout, password hashing, and three roles: Administrator, Document Owner, and Viewer. New users should get the Viewer role by default. Protect the dashboards based on user roles and create tests to verify that users cannot access dashboards they are not authorized to use. I also want the login and registration pages to have a modern, attractive interface with a logo instead of a plain design.
+**Objective:** Correct issues discovered during integration and deployment work.
 
-**What it produced:**
-- User model and password hashing
-- Registration, login, and logout routes
-- Role-protected dashboards
-- Login and registration interface
-- Automated authentication tests
+Assistance topics:
+- Investigate application errors and failing test cases.
+- Correct integration issues between application modules.
+- Review document access and permission enforcement.
+- Investigate audit-chain and database-related errors.
+- Troubleshoot deployment configuration and runtime behavior.
+- Recheck affected functionality after corrections.
 
-**What was wrong:**
-The initial test run failed because of the Python import path and template location. Two role access tests also failed because the role was updated after login.
+**Outcome:** Focused on debugging, integration corrections, security-related fixes, and deployment troubleshooting. This date was not treated as a new feature-development phase.
 
-**What I did instead:**
-Fixed the Python import path, moved templates to the Flask app's template directory, and updated the tests to assign roles before login.
+### November 9, 2026 - Final Verification and Documentation Review
 
-**Validation:**
-8 authentication tests passed.
+**Objective:** Verify the final application state and prepare the submission materials.
 
-**Security note:**
-New registrations receive the Viewer role. Secure administrator-managed role assignment and additional authentication hardening are still pending.
+Assistance topics:
+- Run the complete automated regression test suite.
+- Review permission enforcement and access-denial behavior.
+- Verify audit event creation and hash-chain checks.
+- Review AI recommendation output validation.
+- Check deployment status and application configuration.
+- Rewrite and review project documentation for consistency.
+- Record accepted risks and remaining deployment limitations.
 
-**Commit:**
-Pending.
+**Outcome:**
+- Automated test result: **81 tests passed**.
+- Render deployment completed successfully for the recorded deployment commit.
+- Documentation reviewed and updated.
+- Remaining infrastructure and hosted-AI limitations documented.
 
+## 4. Responsible Use of AI Assistance
 
-## Day 4 — 2026-11-04
+AI tools were used as development and learning assistants. Their suggestions were reviewed and adapted to the project requirements.
 
-### Prompt 6 — Secure Document Management
+The following practices were followed:
 
-**Tool:** ChatGPT
+- AI-generated code and suggestions were not treated as automatically correct.
+- Application behavior was checked through implementation review and automated tests.
+- Security-sensitive operations remained subject to server-side validation.
+- AI permission recommendations did not directly grant document access.
+- Document owners retained control over permission approval and revocation.
+- Security limitations and unverified production protections were documented.
+- Test results were recorded based on the actual automated test execution.
 
-**Prompt / Summary:**
-Help implement secure document management in the existing Flask TrustVault Guard project. Add document upload handling, file extension and MIME-type validation, UUID-based server-side filenames, role restrictions for uploads, document database records, and audit logging. Improve the dashboard upload interface with file selection, drag-and-drop interaction, and selected-file feedback. Preserve the existing authentication and role structure.
+## 5. Verification and Accountability
 
-**What it produced:**
-- Document model and document module structure
-- Document upload route
-- Extension and MIME-type validation
-- UUID-based stored filenames
-- Upload restrictions for Document Owner and Administrator
-- Upload audit-event integration
-- Dashboard upload interface improvements
+The final automated test result recorded on November 9, 2026 was:
 
-**What was wrong / limitations:**
-The initial upload implementation did not yet demonstrate complete document lifecycle security. The dashboard did not initially display Flask flash notifications. Browser-based drag-and-drop, document-list visibility, download behavior, and audit-event persistence still require verification.
+**81 passed in 32.52 seconds.**
 
-**What I did instead:**
-Integrated document management into the existing Flask application, improved the upload interface, and recorded the remaining validation tasks instead of treating untested behavior as complete.
+This result confirms that the recorded automated test suite passed at that verification point. It does not establish that every possible attack, deployment condition, or production environment scenario has been independently tested.
 
-**Validation:**
-Implementation committed and pushed. Browser-based upload, document listing, download, and audit verification remain pending.
+## 6. Conclusion
 
-**Security note:**
-Server-side validation and role checks are implemented in the upload flow. File-size limits, comprehensive document authorization tests, and further security hardening still need verification.
+AI tools supported different stages of TrustVault Guard, including project planning, architecture discussions, implementation guidance, security reviews, debugging, testing, and documentation.
 
-**Commit:** c23490c
+The project implementation, integration decisions, verification activities, and final submission preparation were reviewed against the application's requirements.
 
-
-## Day 5 — 2026-11-05
-
-### Prompt 7 — Document Search, Filtering and Pagination
-
-**Tool:** ChatGPT
-
-**Prompt / Summary:**
-Extend the existing Flask document-management module with an owner-specific document listing. Add filename search, category filtering, date filtering, pagination, input validation, and a dynamic document count on the owner dashboard. Connect the Documents navigation link to the listing page while preserving existing authentication and role restrictions.
-
-**What it produced:**
-- Owner-restricted My Documents route.
-- Filename search with a maximum query length.
-- Category and upload-date filters.
-- Pagination for document results.
-- Validation of date and page query parameters.
-- Owner-specific document categories and document counts.
-- Documents navigation and owner-dashboard quick access.
-
-**What was wrong / limitations:**
-The earlier document-management interface did not provide complete search, filtering, pagination, or a connected owner document-listing workflow. The new functionality still requires dedicated document-route tests and browser-based verification.
-
-**What I did instead:**
-Updated the document routes and templates, connected the dashboard navigation, and added a dynamic owner document count.
-
-**Validation:**
-- Python compilation completed without syntax errors.
-- Application routes were registered.
-- Relevant templates loaded successfully.
-- Authentication tests passed: 8/8.
-- Dedicated document search, filtering, pagination, and browser tests still require verification.
-
-**Commit:** 056bbc2
-
-## Day 6 — 2026-11-06
-
-### Prompt 8 — Landing Page and Dashboard Cleanup
-**Tool:** ChatGPT
-
-**Prompt / Summary:**
-Create a public landing page and improve the existing TrustVault dashboard without disturbing authentication or existing database records. Separate document upload functionality from the dashboard.
-
-**What it produced:**
-- Public landing page at `/`.
-- Login and Registration navigation.
-- Separate Upload page template.
-- Dashboard Upload Document and My Documents navigation.
-- Removed the embedded upload form from the dashboard.
-
-**Validation:**
-- Landing page returned HTTP 200.
-- Administrator dashboard returned HTTP 200.
-- Administrator Upload page returned HTTP 200.
-- Viewer Upload access redirected to `/dashboard`.
-- Viewer My Documents access redirected to `/dashboard`.
-- Actual file upload and download remain pending verification.
-
-### Prompt 9 — Role-Based Access Verification
-**Tool:** ChatGPT
-
-**Prompt / Summary:**
-Verify Administrator and Viewer access using Flask test-client sessions without modifying existing database records.
-
-**Validation:**
-- Administrator dashboard and Upload page access passed.
-- Viewer direct Upload access blocked.
-- Viewer direct My Documents access blocked.
-- Dashboard My Documents URL presence needs further investigation.
-
-### Prompt 10 — Pytest Collection Investigation
-**Tool:** ChatGPT
-
-**Prompt / Summary:**
-Run the test suite and investigate import errors while preserving both project folders and existing data.
-
-**Validation:**
-- Pytest attempted to collect tests from root and nested project folders.
-- `ModuleNotFoundError: No module named 'app'` occurred during collection.
-- Full test suite remains unverified.
-
-**Code Commit:** `b2001ea` — Day 6: Add landing page and role-based document upload UI.
-
-**Day 6 Development Status:** Completed.
-**Remaining Validation:** Pytest collection, actual upload/download, and outstanding security tests.
+AI assistance was used to support development, not to replace application-level authorization, security validation, or human approval of document permissions.

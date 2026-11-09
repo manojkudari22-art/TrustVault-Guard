@@ -1,163 +1,130 @@
-﻿# TrustVault Guard — Project Plan and Daily Progress
+# TrustVault Guard - Project Plan and Progress
 
-## Project Overview
+## 1. Project Objective
 
-TrustVault Guard is a secure document-sharing platform developed for the Snovasys Fresher Hiring Challenge 2026.
+Build a secure document-sharing application that ensures document access is controlled by ownership and explicit permissions, while maintaining a tamper-evident audit trail.
 
-The application focuses on secure document access, role-based permissions, private document storage, and an audit trail of document activities.
+The project was developed for the Snovasys Fresher Hiring Challenge 2026.
 
-## Project Plan
+## 2. Development Approach
 
-### Day 1 — 2026-11-01
-**Implemented:**
-- Understand the challenge requirements.
-- Define the project scope and architecture.
-- Set up the project repository and folder structure.
-- Prepare initial documentation and security threat analysis.
+The work was organized around the original November 1-7 challenge period. November 8 and 9 were used for debugging, integration corrections, final verification, and documentation review.
 
-**Implementation Status:** Completed.
+The development process focused on:
 
-### Day 2 — 2026-11-02
-**Implemented:**
-- User registration, login, and logout.
-- Password hashing.
+- Understanding the problem and identifying security requirements.
+- Designing the application architecture and data model.
+- Implementing authentication and role-based access.
+- Building secure document management and permissions.
+- Adding audit logging and AI-assisted recommendations.
+- Testing, debugging, deployment, and documentation.
+
+## 3. Planned Development Schedule
+
+### November 1 - Planning and Security Design
+- Review the challenge problem statement.
+- Identify protected assets, users, and security risks.
+- Define application roles and core requirements.
+- Prepare the initial architecture and database design.
+
+### November 2 - Authentication and Role Management
+- Set up the Flask application.
+- Implement user registration, login, and logout.
+- Add password hashing and session management.
+- Introduce Administrator, Document Owner, and Viewer roles.
+- Test authentication and role restrictions.
+
+### November 3 - Secure Document Management
+- Implement document upload.
+- Add file extension, MIME type, and content validation.
+- Store uploaded files in private application storage.
+- Record document metadata and ownership.
+- Implement authorized document access.
+
+### November 4 - Permissions and Sharing
+- Implement document-level permissions.
+- Support view, download, and edit access.
+- Add owner-controlled sharing and revocation.
+- Validate authorization on protected operations.
+- Test access denial and revocation behavior.
+
+### November 5 - Audit Trail and Administration
+- Record important document and permission activities.
+- Implement SHA-256 hash-linked audit events.
+- Add audit-chain verification.
+- Provide administrative audit monitoring.
+
+### November 6 - AI Assistance and Security Testing
+- Implement AI-assisted permission recommendations.
+- Validate suggested recipients and permission values.
+- Keep actual permission grants under document-owner control.
+- Expand automated security and functional tests.
+
+### November 7 - Integration and Initial Validation
+- Integrate the main application modules.
+- Review application workflows.
+- Run the initial automated test suite.
+- Prepare deployment and project documentation.
+### November 8 - Debugging and Integration Corrections
+- Investigate and fix issues identified during integration.
+- Correct application and database initialization problems.
+- Review authentication, document, and permission workflows.
+- Address security-related implementation issues.
+- Troubleshoot deployment configuration and runtime errors.
+- Re-run relevant tests after corrections.
+
+### November 9 - Final Verification and Documentation
+- Run the complete automated regression test suite.
+- Verify audit-chain behavior and AI recommendation validation.
+- Review important application and access-control workflows.
+- Check the deployed application and deployment configuration.
+- Review and finalize project documentation.
+- Record known limitations and accepted risks.
+
+## 4. Implementation Status
+
+The following capabilities are implemented:
+
+- User registration, login, logout, and password management.
+- Password hashing and role-based access control.
 - Administrator, Document Owner, and Viewer roles.
-- Role-based dashboard protection.
-- Authentication and authorization tests.
-- Login and registration interface improvements.
+- Private document upload and file validation.
+- Document ownership, metadata management, search, and filtering.
+- View, download, and edit permissions.
+- Owner-controlled permission grants and revocation.
+- Document metadata updates and supported content operations.
+- AI-assisted permission recommendations with output validation.
+- Separate owner approval for actual permission grants.
+- Audit event recording and SHA-256 hash-chain verification.
+- Administrative audit monitoring.
+- Automated functional, authorization, audit, and AI validation tests.
 
-**Validation:**
-- 8 authentication tests passed.
-- Role-based dashboard access checks verified.
+## 5. Final Test Result
 
-**Implementation Status:** Completed.
+**November 9, 2026: 81 tests passed in 32.52 seconds.**
 
-### Day 3 — 2026-11-03
-**Implemented:**
-- Started secure document management.
-- Created the document management foundation.
-- Added document upload and document storage functionality.
-- Introduced document listing and download functionality.
-- Started document access restrictions.
+This is the recorded automated test result at final verification. It does not represent an independent penetration test or guarantee against every possible attack.
 
-**Validation Progress:**
-- Complete document upload and download verification.
-- Verify document listing and access permissions.
-- Verify unauthorized document access is blocked.
+## 6. Deployment Status
 
-**Implementation Status:** Completed.
+- GitHub repository: https://github.com/manojkudari22-art/TrustVault-Guard
+- Hosted application: https://trustvault-secure-demo.onrender.com
+- Hosting platform: Render
+- Latest recorded successful deployment commit: c047889
 
-### Day 4 — 2026-11-04
-**Implemented:**
-- Added document upload route with extension and MIME-type validation.
-- Added UUID-based server-side file storage.
-- Restricted document uploads to Document Owner and Administrator roles.
-- Added document model and document module structure.
-- Integrated upload audit-event logging.
-- Improved dashboard upload interface and styling.
-- Added drag-and-drop file selection functionality.
-- Added selected filename and file-size preview.
-- Added file-selection visual feedback.
+Deployment success does not establish persistent database storage or availability of local AI services in the hosted environment.
 
-**Validation Progress — Pending:**
-- Verify uploaded documents appear in the document list.
-- Verify successful upload notification appears on the dashboard.
-- Test drag-and-drop and file selection in the browser.
-- Verify document download functionality.
-- Verify audit-event creation and persistence.
-- Complete remaining document permission and management tests.
+## 7. Known Limitations and Accepted Risks
 
-**Implementation Status:** Completed.
+- The current Render SQLite deployment does not have a configured persistent disk.
+- Local Ollama is not automatically reachable from the hosted application.
+- The SHA-256 audit chain is tamper-evident, not externally immutable.
+- An attacker able to rewrite the complete database may also be able to recalculate the chain.
+- External immutable audit storage or hash anchoring is not configured.
+- Encryption at rest and independent penetration testing remain outside the verified project scope.
 
-**Validation Status:** Pending.
+## 8. Completion Summary
 
-### Day 5 — 2026-11-05
-**Implemented:**
-- Implement document search.
-- Add document category filtering.
-- Develop Administrator activity and audit-log views.
-- Complete remaining core functionality.
-- Perform authorization and functionality tests.
+The project work covered the full period from November 1 to November 9, 2026. The original November 1-7 period focused on planned implementation and initial validation. November 8 was used for debugging and integration corrections. November 9 was used for final regression testing, deployment verification, and documentation review.
 
-**Implementation Status:** Pending.
-
-### Day 6 - 2026-11-06
-
-**Implemented:**
-- Created the public TrustVault landing page and connected the root route.
-- Removed the embedded upload form from the dashboard.
-- Created a separate upload page with file selection, drag-and-drop UI and category input.
-- Preserved the existing upload POST functionality.
-- Added role-based dashboard navigation for Document Owners and Administrators.
-- Added login and role restrictions to the upload page.
-- Verified Administrator upload-page access (HTTP 200).
-- Verified Viewer upload-page restriction (HTTP 302 redirect).
-- Verified Viewer direct My Documents access is restricted.
-- Verified unauthenticated upload-page access redirects to login.
-- Created code commit `b2001ea`.
-
-**Implementation Status:** Completed for the Day 6 scope.
-
-**Validation Status:** Partially Completed.
-
-**Pending Validation and Known Issues:**
-- Full pytest collection failed because root and nested project test folders were both collected, resulting in `ModuleNotFoundError: No module named 'app'`.
-- Verify actual document upload and download end to end.
-- Verify audit-event persistence and integrity.
-- Complete sharing and access-revocation tests.
-- Investigate the unexpected My Documents URL in the Viewer dashboard response.
-- Complete remaining security and browser tests.
-
-### Day 7 — 2026-11-07
-**Planned:**
-- Prepare the final project demonstration.
-- Review the GitHub repository.
-- Verify deployment and application functionality.
-- Complete final documentation.
-- Prepare and submit the challenge project.
-
-**Implementation Status:** Pending.
-
----
-
-## Current Project Status
-
-| Day | Development Status |
-|---|---|
-| Day 1 | Completed |
-| Day 2 | Completed |
-| Day 3 | Completed |
-| Day 4 | Completed |
-| Day 5 | Implementation recorded; remaining validation moved to Day 6 |
-| Day 6 | In progress — pending validation and remaining work |
-| Day 7 | Pending |
-
-## Validation Summary
-
-**Completed validation:**
-- Day 2 authentication tests: 8/8 passed.
-- Basic role-based dashboard access checks verified.
-
-**Pending validation:**
-- Document upload and listing verification.
-- Browser-based drag-and-drop testing.
-- Upload success notification verification.
-- Document download verification.
-- Audit-event persistence verification.
-- Remaining document authorization tests.
-
-## Current Development Focus
-
-Day 5 — Document search, category filtering, Administrator activity views, and remaining validation.
-
-## Progress Reporting Notes
-
-- Development completion and validation completion are tracked separately.
-- Features are not marked as tested until verification is performed.
-- Daily progress entries should describe actual implementation work.
-- Security limitations and pending tests should remain documented.
-- Update this file as the project progresses.
-
-
-
-
+The final recorded automated test result was 81 passing tests. The documented limitations remain important considerations for production deployment.
