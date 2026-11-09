@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="tv-dashboard">
+    <main class="tv-history-page">
+        <header class="tv-history-header">
+            <a href="{{ url_for('auth.dashboard') }}" class="tv-history-back">← Dashboard</a>
+            <div>
+                <h1>Account Settings</h1>
+                <p>Manage your account security.</p>
+            </div>
+        </header>
+
+        <section class="tv-history-panel">
+            <h2>Account Information</h2>
+            <p><strong>Username:</strong> {{ current_user.username }}</p>
+            <p><strong>Email:</strong> {{ current_user.email }}</p>
+            <p><strong>Role:</strong> {{ current_user.role }}</p>
+            <p><strong>Status:</strong> {{ "Active" if current_user.is_active else "Inactive" }}</p>
+        </section>
+
+        <section class="tv-history-panel">
+            <h2>Change Password</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="tv-alert tv-alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" required>
+
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" minlength="8" required>
+
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" minlength="8" required>
+
+                <button type="submit">Update Password</button>
+            </form>
+        </section>
+
+        <footer class="tv-history-footer">TrustVault Guard · Account Security</footer>
+    </main>
+</body>
+</html>

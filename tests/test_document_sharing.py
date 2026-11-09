@@ -1,4 +1,4 @@
-import io
+﻿import io
 import zipfile
 from pathlib import Path
 
@@ -115,6 +115,7 @@ def test_active_shared_document_is_visible(client, app):
 
     assert response.status_code == 200
     assert b"Security Test Report" in response.data
+    assert b"view access" in response.data
 
 
 def test_revoked_shared_document_is_not_visible(client, app):
@@ -643,3 +644,506 @@ def test_replacement_rejects_docx_path_traversal(client, app):
         "docxpathowner-test.pdf",
     )
     assert old_path.read_bytes() == old_content
+
+
+
+def test_file_type_upload_size_limits():
+    from app.documents.routes import MAX_FILE_SIZES
+
+    expected_limits = {
+        "pdf": 25 * 1024 * 1024,
+        "doc": 15 * 1024 * 1024,
+        "docx": 20 * 1024 * 1024,
+        "txt": 5 * 1024 * 1024,
+        "pptx": 20 * 1024 * 1024,
+        "xlsx": 20 * 1024 * 1024,
+        "csv": 10 * 1024 * 1024,
+    }
+
+    assert MAX_FILE_SIZES == expected_limits
+
+
+def test_oversized_pdf_is_rejected():
+    from app.documents.routes import MAX_FILE_SIZES, allowed_file
+
+    oversized_content = io.BytesIO(
+        b"x" * (MAX_FILE_SIZES["pdf"] + 1)
+    )
+
+    assert not allowed_file(
+        "large.pdf",
+        "application/pdf",
+        oversized_content,
+    )
+
+def create_test_ooxml_file(extension):
+    from app.documents.routes import ALLOWED_EXTENSIONS
+
+    main_parts = {
+        "pptx": (
+            "ppt/presentation.xml",
+            b'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>',
+        ),
+        "xlsx": (
+            "xl/workbook.xml",
+            b'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>',
+        ),
+    }
+
+    main_path, main_xml = main_parts[extension]
+
+    content_types = (
+        b'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        b'<Default Extension="xml" ContentType="application/xml"/>'
+        b'</Types>'
+    )
+
+    file_stream = io.BytesIO()
+
+    with zipfile.ZipFile(file_stream, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", content_types)
+        archive.writestr(main_path, main_xml)
+
+    file_stream.seek(0)
+    return file_stream
+
+
+@pytest.mark.parametrize(
+    ("extension", "mimetype"),
+    [
+        ("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+        ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    ],
+)
+def test_valid_ooxml_upload_validation(extension, mimetype):
+    from app.documents.routes import allowed_file
+
+    file_stream = create_test_ooxml_file(extension)
+
+    assert allowed_file(
+        f"sample.{extension}",
+        mimetype,
+        file_stream,
+    )
+
+
+def test_valid_csv_upload_validation():
+    from app.documents.routes import allowed_file
+
+    content = b"name,department\nManoj,CSE\nRavi,IT\n"
+
+    assert allowed_file(
+        "students.csv",
+        "text/csv",
+        io.BytesIO(content),
+    )
+
+
+@pytest.mark.parametrize(
+    ("filename", "mimetype", "content"),
+    [
+        (
+            "fake.pptx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            b"not a zip archive",
+        ),
+        (
+            "fake.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            b"not a zip archive",
+        ),
+        (
+            "fake.csv",
+            "text/csv",
+            b"name,\xff\xfe",
+        ),
+        (
+            "fake.csv",
+            "text/csv",
+            b"name\x00,value",
+        ),
+    ],
+)
+def test_invalid_new_file_formats_are_rejected(
+    filename, mimetype, content
+):
+    from app.documents.routes import allowed_file
+
+    assert not allowed_file(
+        filename,
+        mimetype,
+        io.BytesIO(content),
+    )
+
+
+@pytest.mark.parametrize(
+    ("extension", "mimetype"),
+    [
+        ("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+        ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    ],
+)
+def test_ooxml_wrong_internal_structure_is_rejected(extension, mimetype):
+    from app.documents.routes import allowed_file
+
+    file_stream = io.BytesIO()
+
+    with zipfile.ZipFile(file_stream, "w") as archive:
+        archive.writestr("[Content_Types].xml", b"<Types/>")
+        archive.writestr("wrong/document.xml", b"<document/>")
+
+    file_stream.seek(0)
+
+    assert not allowed_file(
+        f"wrong.{extension}",
+        mimetype,
+        file_stream,
+    )
+
+
+def test_ooxml_path_traversal_is_rejected():
+    from app.documents.routes import allowed_file
+
+    file_stream = create_test_ooxml_file("pptx")
+
+    original = file_stream.getvalue()
+    malicious_stream = io.BytesIO()
+
+    with zipfile.ZipFile(malicious_stream, "w") as archive:
+        archive.writestr("[Content_Types].xml", b"<Types/>")
+        archive.writestr("ppt/presentation.xml", b"<presentation/>")
+        archive.writestr("../outside.txt", original)
+
+    malicious_stream.seek(0)
+
+    assert not allowed_file(
+        "malicious.pptx",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        malicious_stream,
+    )
+
+
+def test_csv_wrong_mimetype_is_rejected():
+    from app.documents.routes import allowed_file
+
+    assert not allowed_file(
+        "students.csv",
+        "application/pdf",
+        io.BytesIO(b"name,department\nManoj,CSE\n"),
+    )
+
+
+def create_text_document(app, owner_username, content, filename="notes.txt",
+                         recipient_username=None, permission="view",
+                         active=True):
+    stored_filename = f"{owner_username}-editor-test.txt"
+
+    with app.app_context():
+        owner = User.query.filter_by(username=owner_username).first()
+        owner.role = "Document Owner"
+
+        document = Document(
+            name="Editor Test",
+            original_filename=filename,
+            stored_filename=stored_filename,
+            category="General",
+            owner_id=owner.id,
+        )
+        db.session.add(document)
+        db.session.flush()
+
+        if recipient_username:
+            recipient = User.query.filter_by(
+                username=recipient_username
+            ).first()
+            db.session.add(DocumentPermission(
+                document_id=document.id,
+                user_id=recipient.id,
+                permission=permission,
+                granted_by=owner.id,
+                is_active=active,
+            ))
+
+        db.session.commit()
+        document_id = document.id
+
+    Path(app.config["UPLOAD_FOLDER"], stored_filename).write_bytes(content)
+    return document_id, stored_filename
+
+
+def test_document_owner_can_edit_txt_content(client, app):
+    register_user(client, "editorowner")
+    document_id, old_filename = create_text_document(
+        app, "editorowner", b"Original text"
+    )
+    login_user(client, "editorowner")
+
+    page = client.get(f"/documents/edit-content/{document_id}")
+    assert page.status_code == 200
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "Updated text content"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        new_filename = document.stored_filename
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="DOCUMENT_CONTENT_EDITED",
+        ).first()
+
+        assert event is not None
+        assert event.user_id == User.query.filter_by(
+            username="editorowner"
+        ).first().id
+
+    assert Path(app.config["UPLOAD_FOLDER"], new_filename).read_bytes() == (
+        b"Updated text content"
+    )
+    assert not Path(app.config["UPLOAD_FOLDER"], old_filename).exists()
+
+
+def test_viewer_with_edit_permission_can_edit_txt(client, app):
+    register_user(client, "contentowner")
+    register_user(client, "contenteditor")
+
+    document_id, _ = create_text_document(
+        app,
+        "contentowner",
+        b"Before edit",
+        recipient_username="contenteditor",
+        permission="edit",
+    )
+    login_user(client, "contenteditor")
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "Edited by permitted viewer"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        content = Path(
+            app.config["UPLOAD_FOLDER"], document.stored_filename
+        ).read_bytes()
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="DOCUMENT_CONTENT_EDITED",
+        ).first()
+
+    assert content == b"Edited by permitted viewer"
+    assert event is not None
+
+
+@pytest.mark.parametrize(
+    ("permission", "active"),
+    [
+        ("view", True),
+        ("download", True),
+        ("edit", False),
+    ],
+)
+def test_viewer_without_active_edit_permission_cannot_edit_txt(
+    client, app, permission, active
+):
+    register_user(client, "contentdenyowner")
+    register_user(client, "contentdenyuser")
+
+    document_id, stored_filename = create_text_document(
+        app,
+        "contentdenyowner",
+        b"Original protected content",
+        recipient_username="contentdenyuser",
+        permission=permission,
+        active=active,
+    )
+    login_user(client, "contentdenyuser")
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "Unauthorized change"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    assert Path(
+        app.config["UPLOAD_FOLDER"], stored_filename
+    ).read_bytes() == b"Original protected content"
+
+    with app.app_context():
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="ACCESS_DENIED",
+        ).first()
+        assert event is not None
+
+
+def test_editor_allows_empty_txt_content(client, app):
+    register_user(client, "emptytextowner")
+    document_id, _ = create_text_document(
+        app, "emptytextowner", b"Text to clear"
+    )
+    login_user(client, "emptytextowner")
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": ""},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        new_filename = document.stored_filename
+
+    assert Path(app.config["UPLOAD_FOLDER"], new_filename).read_bytes() == b""
+
+
+def test_editor_rejects_nul_byte_content(client, app):
+    register_user(client, "nultextowner")
+    document_id, stored_filename = create_text_document(
+        app, "nultextowner", b"Original safe content"
+    )
+    login_user(client, "nultextowner")
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "bad\x00content"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    assert Path(
+        app.config["UPLOAD_FOLDER"], stored_filename
+    ).read_bytes() == b"Original safe content"
+
+
+def test_editor_rejects_invalid_csv_content(client, app):
+    register_user(client, "csvcontentowner")
+    document_id, stored_filename = create_text_document(
+        app,
+        "csvcontentowner",
+        b"name,age\nAlice,20\n",
+        filename="people.csv",
+    )
+    login_user(client, "csvcontentowner")
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": 'name,age\n"Alice,20\n'},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    assert Path(
+        app.config["UPLOAD_FOLDER"], stored_filename
+    ).read_bytes() == b"name,age\nAlice,20\n"
+
+
+def test_editor_audit_failure_preserves_original_file(
+    client, app, monkeypatch
+):
+    register_user(client, "auditfailureowner")
+    document_id, old_filename = create_text_document(
+        app, "auditfailureowner", b"Original content survives"
+    )
+    login_user(client, "auditfailureowner")
+
+    from app.documents import routes as document_routes
+
+    def fail_audit(*args, **kwargs):
+        raise RuntimeError("Simulated audit failure")
+
+    monkeypatch.setattr(document_routes, "log_audit_event", fail_audit)
+
+    response = client.post(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "This must not replace the original"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == old_filename
+
+    upload_folder = Path(app.config["UPLOAD_FOLDER"])
+    assert (upload_folder / old_filename).read_bytes() == (
+        b"Original content survives"
+    )
+    assert len(list(upload_folder.glob("*.txt"))) == 1
+
+@pytest.mark.parametrize("endpoint", ["view", "download"])
+def test_document_routes_reject_path_traversal(client, app, tmp_path, endpoint):
+    register_user(client, "pathowner")
+
+    document_id, _ = create_document(app, "pathowner")
+
+    outside_file = tmp_path.parent / "outside.pdf"
+    outside_file.write_bytes(b"Sensitive file outside upload folder")
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        document.stored_filename = "../outside.pdf"
+        db.session.commit()
+
+    login_user(client, "pathowner")
+    response = client.get(f"/documents/{endpoint}/{document_id}")
+
+    assert response.status_code == 302
+    assert b"Sensitive file outside upload folder" not in response.data
+
+@pytest.mark.parametrize("method", ["get", "post"])
+def test_editor_rejects_path_traversal(client, app, method):
+    register_user(client, "editorpathowner")
+    document_id, _ = create_document(app, "editorpathowner")
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        document.stored_filename = "../outside.pdf"
+        db.session.commit()
+
+    login_user(client, "editorpathowner")
+
+    response = getattr(client, method)(
+        f"/documents/edit-content/{document_id}",
+        data={"content": "Unauthorized file access"} if method == "post" else None,
+    )
+
+    assert response.status_code == 302
+
+def test_replacement_rejects_stored_filename_path_traversal(client, app, tmp_path):
+    register_user(client, "replacepathowner")
+    document_id, original_content = create_document(app, "replacepathowner")
+
+    outside_file = tmp_path.parent / "outside.pdf"
+    outside_file.write_bytes(b"Sensitive file outside upload folder")
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        document.stored_filename = "../outside.pdf"
+        db.session.commit()
+
+    login_user(client, "replacepathowner")
+
+    response = client.post(
+        f"/documents/replace/{document_id}",
+        data={
+            "file": (io.BytesIO(b"%PDF-1.7 replacement"), "replacement.pdf")
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert outside_file.read_bytes() == b"Sensitive file outside upload folder"
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.stored_filename == "../outside.pdf"

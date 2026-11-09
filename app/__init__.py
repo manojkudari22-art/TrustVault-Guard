@@ -1,4 +1,6 @@
-﻿from flask import Flask
+﻿from datetime import timezone
+
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -8,6 +10,14 @@ from config import Config
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+
+
+def format_system_time(value):
+    if value is None:
+        return "Unavailable"
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone().strftime("%d %b %Y, %I:%M:%S %p")
 
 
 def create_app(test_config=None):
@@ -20,6 +30,7 @@ def create_app(test_config=None):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    app.add_template_filter(format_system_time, "system_time")
 
     login_manager.login_view = "auth.login"
 

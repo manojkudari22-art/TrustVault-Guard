@@ -12,3 +12,10 @@ TrustVault-Secure/
 .vscode/
 dump.txt
 *.bak
+
+# Temporary backup files
+*.backup
+*.before-*
+*.encoding-backup
+*.dashboard-backup
+*.design-backup

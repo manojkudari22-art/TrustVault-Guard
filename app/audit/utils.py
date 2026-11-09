@@ -28,10 +28,16 @@ def _calculate_hash(event):
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def log_audit_event(user_id, document_id, action, details=None):
+def log_audit_event(user_id, document_id, action, details=None, commit=True):
+    chain_status = verify_audit_chain()
+
+    if not chain_status["valid"]:
+        raise RuntimeError(
+            f"Cannot append audit event: {chain_status['message']}"
+        )
+
     previous_event = (
         AuditLog.query
-        .filter(AuditLog.event_hash.isnot(None))
         .order_by(AuditLog.id.desc())
         .first()
     )
@@ -53,7 +59,8 @@ def log_audit_event(user_id, document_id, action, details=None):
 
         event.event_hash = _calculate_hash(event)
 
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return event
 
     except Exception:
@@ -64,7 +71,6 @@ def log_audit_event(user_id, document_id, action, details=None):
 def verify_audit_chain():
     events = (
         AuditLog.query
-        .filter(AuditLog.event_hash.isnot(None))
         .order_by(AuditLog.id.asc())
         .all()
     )
@@ -72,6 +78,14 @@ def verify_audit_chain():
     previous_hash = None
 
     for event in events:
+        if not event.event_hash:
+            return {
+                "valid": False,
+                "total": len(events),
+                "broken_event_id": event.id,
+                "message": "Audit event hash is missing",
+            }
+
         if event.previous_hash != previous_hash:
             return {
                 "valid": False,

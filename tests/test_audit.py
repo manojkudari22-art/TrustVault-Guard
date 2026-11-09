@@ -120,3 +120,30 @@ def test_viewer_cannot_access_audit_integrity_dashboard(client):
     response = client.get("/admin")
 
     assert response.status_code == 403
+
+def test_missing_audit_hash_is_detected(app):
+    with app.app_context():
+        event = log_audit_event(
+            None, None, "TEST_EVENT", "Missing hash test"
+        )
+
+        event.event_hash = None
+        db.session.commit()
+
+        result = verify_audit_chain()
+
+        assert result["valid"] is False
+        assert result["broken_event_id"] == event.id
+        assert result["message"] == "Audit event hash is missing"
+
+def test_new_audit_event_is_rejected_when_chain_is_broken(app):
+    with app.app_context():
+        event = log_audit_event(None, None, "FIRST_EVENT")
+        event.event_hash = None
+        db.session.commit()
+
+        with pytest.raises(RuntimeError, match="Cannot append audit event"):
+            log_audit_event(None, None, "SECOND_EVENT")
+
+        assert AuditLog.query.count() == 1
+        assert verify_audit_chain()["valid"] is False

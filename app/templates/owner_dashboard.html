@@ -14,7 +14,7 @@
   </div>
   <div class="tv-nav-right">
     <a class="tv-nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
-    <a class="tv-nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+    <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="tv-nav-link">Logout</button></form>
   </div>
 </nav>
 
@@ -30,16 +30,16 @@
 
   <section class="tv-section-heading"><h2>Workspace Overview</h2><p>Your current access and document information</p></section>
   <section class="tv-stats">
-    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">ACCESS LEVEL</div><div class="tv-stat-value">{{ current_user.role }}</div></article>
-    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">DOCUMENTS</div><div class="tv-stat-value">{{ document_count }}</div></article>
-    <article class="tv-stat"><div class="tv-stat-icon"></div><div class="tv-stat-label">SHARING</div><div class="tv-stat-value">Controlled</div></article>
+    <article class="tv-stat"><div class="tv-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div><div class="tv-stat-label">ACCESS LEVEL</div><div class="tv-stat-value">{{ current_user.role }}</div></article>
+    <article class="tv-stat"><div class="tv-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5M8 13h8M8 17h8"/></svg></div><div class="tv-stat-label">DOCUMENTS</div><div class="tv-stat-value">{{ document_count }}</div></article>
+    <article class="tv-stat"><div class="tv-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 11 6-5M9 13l6 5"/></svg></div><div class="tv-stat-label">SHARING</div><div class="tv-stat-value">Controlled</div></article>
   </section>
 
   <section class="tv-section-heading"><h2>Quick Access</h2><p>Navigate through your workspace</p></section>
   <section class="tv-actions">
-      <a class="tv-action-card" href="{{ url_for('documents.my_documents') }}"><span class="tv-action-icon">D</span><span><strong>My Documents</strong><small>Search and manage uploaded documents</small></span><span class="tv-arrow">→</span></a>
-    <a class="tv-action-card" href="{{ url_for('auth.dashboard') }}"><span class="tv-action-icon">?</span><span><strong>Back to Dashboard</strong><small>Return to your secure workspace</small></span><span class="tv-arrow">?</span></a>
-    <a class="tv-action-card" href="{{ url_for('auth.logout') }}"><span class="tv-action-icon">?</span><span><strong>Sign Out</strong><small>Securely end your session</small></span><span class="tv-arrow">?</span></a>
+      <a class="tv-action-card" href="{{ url_for('documents.my_documents') }}"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/><path d="M3 10h18"/></svg></span><span><strong>My Documents</strong><small>Search and manage uploaded documents</small></span><span class="tv-arrow">→</span></a>
+    <a class="tv-action-card" href="{{ url_for('auth.dashboard') }}"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><span><strong>Back to Dashboard</strong><small>Return to your secure workspace</small></span><span class="tv-arrow" aria-hidden="true">&#8594;</span></a>
+    <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="tv-action-card"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg></span><span><strong>Sign Out</strong><small>Securely end your session</small></span><span class="tv-arrow" aria-hidden="true">&#8594;</span></button></form>
   </section>
   <footer class="tv-footer">TrustVault Guard | Secure Document Sharing</footer>
 </main>

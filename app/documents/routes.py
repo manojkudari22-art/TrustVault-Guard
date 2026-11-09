@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory
+from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory, render_template
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -19,14 +19,169 @@ documents = Blueprint("documents", __name__, url_prefix="/documents")
 ALLOWED_EXTENSIONS = {
     "pdf": {"application/pdf"},
     "txt": {"text/plain"},
-    "png": {"image/png"},
-    "jpg": {"image/jpeg"},
-    "jpeg": {"image/jpeg"},
     "doc": {"application/msword"},
     "docx": {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     },
+    "pptx": {
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    },
+    "xlsx": {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    "csv": {
+        "text/csv",
+        "application/csv",
+        "application/vnd.ms-excel",
+    },
 }
+
+MAX_FILE_SIZES = {
+    "pdf": 25 * 1024 * 1024,
+    "doc": 15 * 1024 * 1024,
+    "docx": 20 * 1024 * 1024,
+    "pptx": 20 * 1024 * 1024,
+    "xlsx": 20 * 1024 * 1024,
+    "csv": 10 * 1024 * 1024,
+    "txt": 5 * 1024 * 1024,
+}
+
+
+def validate_ooxml_archive(file_stream, extension):
+    """Validate DOCX, PPTX and XLSX ZIP-based Office packages."""
+    required_parts = {
+        "docx": "word/document.xml",
+        "pptx": "ppt/presentation.xml",
+        "xlsx": "xl/workbook.xml",
+    }
+    expected_root_tags = {
+        "docx": "document",
+        "pptx": "presentation",
+        "xlsx": "workbook",
+    }
+
+    try:
+        file_stream.seek(0)
+
+        with zipfile.ZipFile(file_stream) as archive:
+            entries = archive.infolist()
+
+            if not entries or len(entries) > 2000:
+                return False
+
+            names = set()
+            total_uncompressed_size = 0
+
+            for entry in entries:
+                name = entry.filename
+
+                if (
+                    not name
+                    or "\x00" in name
+                    or "\\" in name
+                    or name.startswith("/")
+                    or ".." in Path(name).parts
+                    or entry.flag_bits & 0x1
+                ):
+                    return False
+
+                if name in names:
+                    return False
+                names.add(name)
+
+                if entry.file_size < 0 or entry.compress_size < 0:
+                    return False
+
+                if entry.file_size > 50 * 1024 * 1024:
+                    return False
+
+                total_uncompressed_size += entry.file_size
+                if total_uncompressed_size > 100 * 1024 * 1024:
+                    return False
+
+                if (
+                    entry.file_size > 0
+                    and entry.file_size / max(entry.compress_size, 1) > 200
+                ):
+                    return False
+
+            required = {
+                "[Content_Types].xml",
+                required_parts[extension],
+            }
+
+            if not required.issubset(names):
+                return False
+
+            if archive.testzip() is not None:
+                return False
+
+            content_types_data = archive.read("[Content_Types].xml")
+            main_part_data = archive.read(required_parts[extension])
+
+            if len(content_types_data) > 1024 * 1024:
+                return False
+
+            if len(main_part_data) > 10 * 1024 * 1024:
+                return False
+
+            content_types_root = ET.fromstring(content_types_data)
+            main_root = ET.fromstring(main_part_data)
+
+            return (
+                content_types_root.tag.endswith("}Types")
+                and main_root.tag.endswith(
+                    "}" + expected_root_tags[extension]
+                )
+            )
+
+    except (
+        OSError,
+        zipfile.BadZipFile,
+        ET.ParseError,
+        KeyError,
+        RuntimeError,
+        ValueError,
+    ):
+        return False
+
+    finally:
+        file_stream.seek(0)
+
+
+def validate_csv(file_stream):
+    """Check CSV encoding and syntax without executing spreadsheet formulas."""
+    import csv
+    import io
+
+    try:
+        file_stream.seek(0)
+        content = file_stream.read()
+
+        if b"\x00" in content:
+            return False
+
+        text = content.decode("utf-8-sig")
+        reader = csv.reader(io.StringIO(text, newline=""), strict=True)
+
+        row_count = 0
+
+        for row in reader:
+            row_count += 1
+
+            if row_count > 100000 or len(row) > 1000:
+                return False
+
+            if any(len(field) > 1024 * 1024 for field in row):
+                return False
+
+        return True
+
+    except (UnicodeDecodeError, csv.Error, ValueError):
+        return False
+
+    finally:
+        file_stream.seek(0)
 
 
 def allowed_file(filename, mimetype, file_stream):
@@ -42,77 +197,48 @@ def allowed_file(filename, mimetype, file_stream):
         return False
 
     try:
+        file_stream.seek(0, 2)
+        file_size = file_stream.tell()
+        file_stream.seek(0)
+
+        if file_size > MAX_FILE_SIZES[extension]:
+            return False
+
         signature = file_stream.read(8)
 
         if extension == "pdf":
             return signature.startswith(b"%PDF-")
 
-        if extension == "png":
-            return signature == b"\x89PNG\r\n\x1a\n"
-
-        if extension in {"jpg", "jpeg"}:
-            return signature.startswith(b"\xff\xd8\xff")
-
         if extension == "doc":
             return signature == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
-        if extension == "docx":
-            file_stream.seek(0)
-            with zipfile.ZipFile(file_stream) as archive:
-                entries = archive.infolist()
-
-                if len(entries) > 1000:
-                    return False
-
-                total_size = sum(entry.file_size for entry in entries)
-                if total_size > 50 * 1024 * 1024:
-                    return False
-
-                for entry in entries:
-                    entry_path = Path(entry.filename)
-
-                    if (
-                        entry_path.is_absolute()
-                        or ".." in entry_path.parts
-                        or "\\" in entry.filename
-                    ):
-                        return False
-
-                names = {entry.filename for entry in entries}
-                required = {
-                    "[Content_Types].xml",
-                    "word/document.xml",
-                }
-
-                if not required.issubset(names):
-                    return False
-
-                if archive.testzip() is not None:
-                    return False
-
-                content_types = ET.fromstring(
-                    archive.read("[Content_Types].xml")
-                )
-                document_xml = ET.fromstring(
-                    archive.read("word/document.xml")
-                )
-
-                return (
-                    content_types.tag.endswith("}Types")
-                    and document_xml.tag.endswith("}document")
-                )
+        if extension in {"docx", "pptx", "xlsx"}:
+            return validate_ooxml_archive(file_stream, extension)
 
         if extension == "txt":
             file_stream.seek(0)
             content = file_stream.read()
+
             if b"\x00" in content:
                 return False
+
             content.decode("utf-8-sig")
             return True
 
+        if extension == "csv":
+            return validate_csv(file_stream)
+
         return False
 
-    except (OSError, UnicodeDecodeError, zipfile.BadZipFile, ET.ParseError, KeyError, RuntimeError):
+    except (
+        OSError,
+        UnicodeDecodeError,
+        zipfile.BadZipFile,
+        ET.ParseError,
+        KeyError,
+        RuntimeError,
+        ValueError,
+    ):
         return False
 
     finally:
@@ -162,7 +288,7 @@ def upload_document():
 
     try:
         db.session.add(document)
-        db.session.commit()
+        db.session.flush()
 
         log_audit_event(
             user_id=current_user.id,
@@ -243,6 +369,24 @@ def my_documents():
         .all()
     ]
 
+    active_permissions = (
+        db.session.query(
+            DocumentPermission.document_id,
+            DocumentPermission.user_id,
+            User.username,
+            DocumentPermission.permission
+        )
+        .join(User, User.id == DocumentPermission.user_id)
+        .join(Document, Document.id == DocumentPermission.document_id)
+        .filter(
+            Document.owner_id == current_user.id,
+            Document.deleted_at.is_(None),
+            DocumentPermission.is_active.is_(True)
+        )
+        .order_by(DocumentPermission.created_at.desc())
+        .all()
+    )
+
     return render_template(
         "documents/list.html",
         documents=documents_page,
@@ -252,7 +396,8 @@ def my_documents():
         categories=categories,
         page=page,
         total_pages=total_pages,
-        total_documents=total_documents
+        total_documents=total_documents,
+        active_permissions=active_permissions
     )
 @documents.route("/download/<int:document_id>")
 @login_required
@@ -292,7 +437,12 @@ def download_document(document_id):
         flash("You are not authorized to download this document.", "error")
         return redirect(url_for("auth.dashboard"))
 
-    upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    stored_path = (upload_folder / document.stored_filename).resolve()
+
+    if stored_path.parent != upload_folder or not stored_path.is_file():
+        flash("Document file is unavailable or has an invalid storage path.", "error")
+        return redirect(url_for("auth.dashboard"))
 
     log_audit_event(
         user_id=current_user.id,
@@ -302,7 +452,7 @@ def download_document(document_id):
     )
 
     return send_from_directory(
-        upload_folder,
+        str(upload_folder),
         document.stored_filename,
         as_attachment=True,
         download_name=document.original_filename
@@ -343,7 +493,12 @@ def view_document(document_id):
         flash("You are not authorized to view this document.", "error")
         return redirect(url_for("auth.dashboard"))
 
-    upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    stored_path = (upload_folder / document.stored_filename).resolve()
+
+    if stored_path.parent != upload_folder or not stored_path.is_file():
+        flash("Document file is unavailable or has an invalid storage path.", "error")
+        return redirect(url_for("auth.dashboard"))
 
     log_audit_event(
         user_id=current_user.id,
@@ -360,6 +515,127 @@ def view_document(document_id):
     )
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
+
+
+@documents.route("/edit-content/<int:document_id>", methods=["GET", "POST"])
+@login_required
+def edit_document_content(document_id):
+    import io
+
+    document = db.session.get(Document, document_id)
+
+    if document is None or document.deleted_at is not None:
+        flash("Document not found.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    back_endpoint = (
+        "documents.my_documents"
+        if document.owner_id == current_user.id
+        else "documents.shared_with_me"
+    )
+
+    extension = document.original_filename.rsplit(".", 1)[-1].lower()
+    if extension not in {"txt", "csv"}:
+        flash("Only TXT and CSV files support direct editing.", "error")
+        return redirect(url_for(back_endpoint))
+
+    is_owner = document.owner_id == current_user.id
+    permission = None
+
+    if not is_owner:
+        permission = DocumentPermission.query.filter_by(
+            document_id=document.id,
+            user_id=current_user.id,
+            is_active=True
+        ).first()
+
+    if not (
+        is_owner or
+        (permission is not None and permission.permission == "edit")
+    ):
+        log_audit_event(
+            current_user.id,
+            document.id,
+            "ACCESS_DENIED",
+            "Unauthorized document content editing attempt"
+        )
+        flash("You are not authorized to edit this document.", "error")
+        return redirect(url_for(back_endpoint))
+
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    old_path = (upload_folder / document.stored_filename).resolve()
+
+    if old_path.parent != upload_folder or not old_path.is_file():
+        flash("Document file is unavailable or has an invalid storage path.", "error")
+        return redirect(url_for(back_endpoint))
+
+    if request.method == "GET":
+        try:
+            if old_path.stat().st_size > 10 * 1024 * 1024:
+                flash("This file is too large for the online editor.", "error")
+                return redirect(url_for(back_endpoint))
+
+            content = old_path.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            flash("Unable to read this file as UTF-8 text.", "error")
+            return redirect(url_for(back_endpoint))
+
+        return render_template(
+            "documents/editor.html",
+            document=document,
+            content=content,
+            extension=extension,
+            back_endpoint=(
+                "documents.my_documents"
+                if is_owner
+                else "documents.shared_with_me"
+            )
+        )
+
+    content = request.form.get("content", "")
+    new_bytes = content.encode("utf-8")
+
+    if len(new_bytes) > 10 * 1024 * 1024 or b"\x00" in new_bytes:
+        flash("Content is invalid or exceeds the 10 MB editor limit.", "error")
+        return redirect(url_for("documents.edit_document_content", document_id=document.id))
+
+    if extension == "csv" and not validate_csv(io.BytesIO(new_bytes)):
+        flash("Invalid CSV content. Please correct it before saving.", "error")
+        return redirect(url_for("documents.edit_document_content", document_id=document.id))
+
+    new_filename = f"{uuid.uuid4().hex}.{extension}"
+    new_path = upload_folder / new_filename
+
+    try:
+        new_path.write_bytes(new_bytes)
+        document.stored_filename = new_filename
+        db.session.flush()
+
+        log_audit_event(
+            current_user.id,
+            document.id,
+            "DOCUMENT_CONTENT_EDITED",
+            f"Edited {extension.upper()} document content"
+        )
+
+    except Exception:
+        db.session.rollback()
+        try:
+            new_path.unlink(missing_ok=True)
+        except OSError:
+            current_app.logger.exception("Unable to remove failed editor file")
+
+        current_app.logger.exception("Document content editing failed")
+        flash("Unable to save document changes.", "error")
+        return redirect(url_for("documents.edit_document_content", document_id=document.id))
+
+    try:
+        old_path.unlink(missing_ok=True)
+    except OSError:
+        current_app.logger.exception("Unable to remove previous document version")
+
+    flash("Document content saved successfully.", "success")
+    return redirect(url_for("documents.edit_document_content", document_id=document.id))
 
 
 @documents.route("/upload", methods=["GET"])
@@ -432,8 +708,8 @@ def share_document(document_id):
         flash("Unable to share document.", "error")
         return redirect(url_for("documents.my_documents"))
 
-    flash("Document shared successfully.", "success")
-    return redirect(url_for("documents.my_documents"))
+    flash("Document shared successfully.", "share_success")
+    return redirect(url_for("documents.my_documents", shared_document=document.id))
 
 
 @documents.route("/revoke/<int:document_id>/<int:user_id>", methods=["POST"])
@@ -542,6 +818,8 @@ def shared_with_me():
             user_id=current_user.id,
             is_active=True
         ).first()
+        if permission is None:
+            continue
         document.current_permission = permission.permission
 
     categories = [
@@ -646,7 +924,12 @@ def delete_document(document_id):
         flash("Only the document owner can delete it.", "error")
         return redirect(url_for("documents.my_documents"))
 
-    file_path = Path(current_app.config["UPLOAD_FOLDER"]) / document.stored_filename
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
+    file_path = (upload_folder / document.stored_filename).resolve()
+
+    if file_path.parent != upload_folder or not file_path.is_file():
+        flash("Document file is unavailable or has an invalid storage path.", "error")
+        return redirect(url_for("documents.my_documents"))
 
     try:
         document.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -743,11 +1026,15 @@ def replace_document_content(document_id):
     extension = original_filename.rsplit(".", 1)[1].lower()
     new_stored_filename = f"{uuid.uuid4().hex}.{extension}"
 
-    upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_folder = Path(current_app.config["UPLOAD_FOLDER"]).resolve()
     upload_folder.mkdir(parents=True, exist_ok=True)
 
     new_file_path = upload_folder / new_stored_filename
-    old_file_path = upload_folder / document.stored_filename
+    old_file_path = (upload_folder / document.stored_filename).resolve()
+
+    if old_file_path.parent != upload_folder or not old_file_path.is_file():
+        flash("Original document is unavailable or has an invalid storage path.", "error")
+        return redirect(url_for("documents.my_documents"))
 
     old_stored_filename = document.stored_filename
     old_original_filename = document.original_filename
@@ -771,7 +1058,13 @@ def replace_document_content(document_id):
 
     except Exception:
         db.session.rollback()
-        new_file_path.unlink(missing_ok=True)
+        try:
+            new_file_path.unlink(missing_ok=True)
+        except OSError:
+            current_app.logger.exception(
+                "Unable to remove failed replacement file"
+            )
+
         current_app.logger.exception("Document content replacement failed")
         flash("Unable to replace document content.", "error")
         return redirect(url_for("documents.my_documents"))

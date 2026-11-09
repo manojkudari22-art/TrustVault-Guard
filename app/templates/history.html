@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
 <body class="tv-dashboard">
 <div class="tv-history-page">
     <header class="tv-history-header">
-        <a href="{{ url_for('auth.dashboard') }}" class="tv-history-back">← Dashboard</a>
+        <a href="{{ url_for('auth.dashboard') }}" class="tv-history-back">&larr; Dashboard</a>
         <div>
             <h1>Activity History</h1>
             <p>Review recorded document and account activity.</p>
@@ -27,7 +27,7 @@
                         <th>ACTION</th>
                         <th>DOCUMENT</th>
                         <th>DETAILS</th>
-                        <th>DATE & TIME (UTC)</th>
+                        <th>DATE & TIME (SYSTEM)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,7 +37,7 @@
                         <td><span class="tv-history-action">{{ event.action }}</span></td>
                         <td>{{ document_name or "Not associated" }}</td>
                         <td>{{ event.details or "No additional details" }}</td>
-                        <td>{{ event.timestamp.strftime("%d %b %Y, %H:%M:%S") if event.timestamp else "Unavailable" }}</td>
+                        <td>{{ event.timestamp|system_time }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -45,7 +45,7 @@
         </div>
         {% else %}
         <div class="tv-history-empty">
-            <div class="tv-history-empty-icon">◷</div>
+            <div class="tv-history-empty-icon">&#9719;</div>
             <h2>No activity recorded yet</h2>
             <p>Your recorded document activity will appear here.</p>
         </div>

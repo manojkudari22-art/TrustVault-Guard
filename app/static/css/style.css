@@ -3587,3 +3587,213 @@ body.tv-dashboard .tv-menu-toggle {
     z-index: 1010 !important;
 }
 
+
+/* Share success notification */
+.share-success-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
+    padding: 14px 17px;
+    border: 1px solid rgba(52, 211, 153, 0.38);
+    border-radius: 12px;
+    background: linear-gradient(110deg, rgba(16, 185, 129, 0.18), rgba(6, 95, 70, 0.10));
+    color: #a7f3d0;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
+    animation: shareAlertIn 0.35s ease-out;
+}
+
+.share-success-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+@keyframes shareAlertIn {
+    from { opacity: 0; transform: translateY(-7px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* TrustVault custom action confirmation modal */
+.confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s ease, visibility .22s ease;
+}
+.confirm-modal.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+.confirm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 8, 23, .78);
+    backdrop-filter: blur(9px);
+}
+.confirm-modal-card {
+    position: relative;
+    width: min(100%, 420px);
+    padding: 30px;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(15, 31, 54, .98), rgba(7, 17, 32, .98));
+    box-shadow: 0 25px 90px rgba(0, 0, 0, .55);
+    text-align: center;
+    transform: translateY(14px) scale(.97);
+    transition: transform .22s ease;
+}
+.confirm-modal.is-open .confirm-modal-card {
+    transform: translateY(0) scale(1);
+}
+.confirm-modal-icon {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 18px;
+    border: 1px solid rgba(251, 191, 36, .3);
+    border-radius: 18px;
+    background: rgba(245, 158, 11, .12);
+    color: #fbbf24;
+}
+.confirm-modal-icon svg {
+    width: 30px;
+    height: 30px;
+}
+.confirm-modal.is-delete .confirm-modal-icon {
+    border-color: rgba(248, 113, 113, .3);
+    background: rgba(239, 68, 68, .13);
+    color: #f87171;
+}
+.confirm-modal-card h2 {
+    margin: 0 0 10px;
+    color: #f8fafc;
+    font-size: 21px;
+}
+.confirm-modal-card p {
+    margin: 0;
+    color: #a9b8cc;
+    font-size: 14px;
+    line-height: 1.65;
+}
+.confirm-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 26px;
+}
+.confirm-cancel-btn, .confirm-proceed-btn {
+    min-width: 125px;
+    padding: 12px 18px;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease;
+}
+.confirm-cancel-btn {
+    background: rgba(51, 65, 85, .55);
+    color: #dbeafe;
+}
+.confirm-proceed-btn {
+    border-color: transparent;
+    background: linear-gradient(110deg, #d97706, #f59e0b);
+    color: #111827;
+}
+.confirm-modal.is-delete .confirm-proceed-btn {
+    background: linear-gradient(110deg, #dc2626, #f87171);
+    color: white;
+}
+.confirm-cancel-btn:hover, .confirm-proceed-btn:hover {
+    filter: brightness(1.12);
+    transform: translateY(-2px);
+}
+@media (max-width: 420px) {
+    .confirm-modal-card { padding: 24px 18px; }
+    .confirm-modal-actions { flex-direction: column-reverse; }
+    .confirm-cancel-btn, .confirm-proceed-btn { width: 100%; }
+}
+
+
+/* Custom replacement file picker */
+.custom-file-picker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 16px;
+    margin: 10px 0;
+    border: 1px solid #38bdf8;
+    border-radius: 9px;
+    background: #0f172a;
+    color: #7dd3fc;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.custom-file-picker:hover {
+    background: #1e293b;
+    border-color: #7dd3fc;
+}
+
+.custom-file-picker input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.selected-file-name {
+    margin: 4px 0 12px;
+    color: #94a3b8;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+
+/* POST logout button styling - preserve existing link and card design */
+button.tv-nav-link,
+button.tv-side-link,
+button.tv-action-card {
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+button.tv-nav-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+button.tv-side-link {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+}
+
+button.tv-action-card {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+}

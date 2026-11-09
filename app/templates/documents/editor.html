@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Document | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .editor-page {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 28px;
+        }
+        .editor-card {
+            margin-top: 25px;
+            padding: 28px;
+            border: 1px solid #334155;
+            border-radius: 18px;
+            background: #111827;
+        }
+        .editor-meta { color: #94a3b8; margin-bottom: 20px; }
+        .editor-area {
+            display: block;
+            width: 100%;
+            min-height: 480px;
+            box-sizing: border-box;
+            padding: 18px;
+            border: 1px solid #475569;
+            border-radius: 10px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        .editor-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .editor-save {
+            padding: 12px 22px;
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .editor-cancel {
+            padding: 12px 22px;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+        .editor-back { color: #60a5fa; text-decoration: none; }
+        .editor-muted { color: #94a3b8; }
+        .editor-flash {
+            margin: 12px 0;
+            padding: 12px 15px;
+            border-radius: 9px;
+            border: 1px solid;
+        }
+        .editor-flash.success {
+            color: #86efac;
+            background: #14532d33;
+            border-color: #22c55e66;
+        }
+        .editor-flash.error,
+        .editor-flash.danger {
+            color: #fca5a5;
+            background: #7f1d1d33;
+            border-color: #ef444466;
+        }
+    </style>
+</head>
+<body>
+<main class="editor-page">
+    <a class="editor-back" href="{{ url_for(back_endpoint) }}">← Back to Documents</a>
+    <h1>Edit Document Content</h1>
+    <p class="editor-muted">Make changes to your text document and save them securely.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <p class="editor-flash {{ category }}">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="editor-card">
+        <h3>{{ document.name }}</h3>
+        <p class="editor-meta">
+            {{ document.original_filename }} · {{ extension|upper }}
+        </p>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <textarea
+                class="editor-area"
+                name="content"
+                spellcheck="false"
+                maxlength="10485760"
+            >{{ content }}</textarea>
+
+            <div class="editor-actions">
+                <button type="submit" class="editor-save">Save Changes</button>
+                <a class="editor-cancel" href="{{ url_for(back_endpoint) }}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
