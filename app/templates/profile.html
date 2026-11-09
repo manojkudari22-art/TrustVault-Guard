@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071329">
+    <title>My Profile | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="tv-dashboard">
+<div class="tv-layout">
+    <button class="tv-menu-toggle" id="tvMenuToggle" type="button" aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="tv-sidebar-overlay" id="tvSidebarOverlay"></div>
+
+    <aside class="tv-sidebar" id="tvSidebar">
+        <a class="tv-brand" href="{{ url_for('auth.dashboard') }}">
+            <span class="tv-brand-icon">
+                <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                    <path d="M32 4 54 13v17c0 15-9 24-22 31C19 54 10 45 10 30V13L32 4Z" fill="#071329"/>
+                    <path d="m21 32 8 8 15-17" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <span>TrustVault <strong>Guard</strong></span>
+        </a>
+
+        <div class="tv-sidebar-caption">WORKSPACE</div>
+        <nav class="tv-sidebar-nav" aria-label="Main navigation">
+            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><span>Dashboard</span></a>
+            {% if current_user.role in ["Document Owner", "Administrator"] %}
+            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><span>My Documents</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><span>Owner Workspace</span></a>
+            {% endif %}
+            {% if current_user.role == "Administrator" %}
+            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><span>Admin Console</span></a>
+            {% endif %}
+            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><span>Shared With Me</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><span>Activity Logs</span></a>
+            <a class="tv-side-link active" href="{{ url_for('auth.profile') }}"><span>My Profile</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.settings') }}"><span>Settings</span></a>
+        </nav>
+
+        <div class="tv-sidebar-bottom">
+            <div class="tv-sidebar-security">
+                <span class="tv-security-symbol" aria-hidden="true">&#10003;</span>
+                <strong>Security first</strong>
+                <small>Your documents stay under your control.</small>
+            </div>
+            <div class="tv-sidebar-divider"></div>
+            <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="tv-side-link tv-logout-link"><span>Logout</span></button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="tv-workspace">
+        <header class="tv-topbar">
+            <div class="tv-topbar-heading">
+                <span class="tv-topbar-label">ACCOUNT MANAGEMENT</span>
+                <span class="tv-topbar-subtitle">Manage your TrustVault identity and account details</span>
+            </div>
+            <div class="tv-user">
+                <div class="tv-user-copy">
+                    <small>WELCOME BACK</small>
+                    <strong>{{ current_user.username }}</strong>
+                </div>
+                <span class="tv-profile-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+                    </svg>
+                </span>
+            </div>
+        </header>
+
+        <main class="tv-main">
+            <div class="tv-content">
+                <header class="tv-history-header">
+                    <div>
+                        <h1>My Profile</h1>
+                        <p>View and update your account information.</p>
+                    </div>
+                </header>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                    <div class="tv-alert tv-alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endwith %}
+
+                <section class="tv-history-panel">
+                    <h2>Account Overview</h2>
+                    <p><strong>Account ID:</strong> #{{ current_user.id }}</p>
+                    <p><strong>Account Role:</strong> {{ current_user.role }}</p>
+                    <p><strong>Account Status:</strong> {{ "Active" if current_user.is_active else "Inactive" }}</p>
+                </section>
+
+                <section class="tv-history-panel">
+                    <h2>Personal Information</h2>
+                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ current_user.username }}" maxlength="80" required>
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" value="{{ current_user.email }}" maxlength="120" required>
+                        <label for="current_password">Current Password (required to save)</label>
+                        <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+                        <button type="submit">Save Profile Changes</button>
+                    </form>
+                </section>
+                <footer class="tv-history-footer">TrustVault Guard · Secure Profile Management</footer>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+(function () {
+    const toggle = document.getElementById("tvMenuToggle");
+    const sidebar = document.getElementById("tvSidebar");
+    const overlay = document.getElementById("tvSidebarOverlay");
+    if (!toggle || !sidebar || !overlay) return;
+
+    function closeMenu() {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+    }
+
+    toggle.addEventListener("click", function () {
+        const isOpen = sidebar.classList.toggle("open");
+        overlay.classList.toggle("open", isOpen);
+        toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+    overlay.addEventListener("click", closeMenu);
+})();
+</script>
+</body>
+</html>

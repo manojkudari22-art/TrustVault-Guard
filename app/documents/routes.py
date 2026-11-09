@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory, render_template
+from flask import Blueprint, current_app, request, redirect, url_for, flash, send_from_directory, render_template, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -13,6 +13,7 @@ from app.documents.models import Document
 from app.auth.models import User
 from app.documents.permissions import DocumentPermission
 from app.audit.utils import log_audit_event
+from app.ai.permission_advisor import suggest_permission
 
 documents = Blueprint("documents", __name__, url_prefix="/documents")
 
@@ -649,6 +650,67 @@ def upload_page():
 
 
 
+
+
+@documents.route("/ai-suggest/<int:document_id>", methods=["POST"])
+@login_required
+def ai_suggest_permission(document_id):
+    document = db.session.get(Document, document_id)
+
+    if (
+        document is None
+        or document.deleted_at is not None
+        or document.owner_id != current_user.id
+    ):
+        return jsonify({"error": "You are not authorized to request suggestions."}), 403
+
+    sharing_reason = request.form.get("reason", "").strip()
+    username = request.form.get("username", "").strip()
+
+    if not sharing_reason or len(sharing_reason) > 500:
+        return jsonify({"error": "Enter a sharing reason (maximum 500 characters)."}), 400
+
+    if not username or len(username) > 100:
+        return jsonify({"error": "Enter a valid recipient username."}), 400
+
+    recipient = User.query.filter(
+        User.username == username,
+        User.is_active.is_(True),
+        User.id != current_user.id,
+        User.role.in_(["Viewer", "Document Owner"])
+    ).first()
+
+    if recipient is None:
+        return jsonify({"error": "Recipient not found or not eligible for sharing."}), 400
+
+    existing_permission = DocumentPermission.query.filter_by(
+        document_id=document.id,
+        user_id=recipient.id,
+        is_active=True
+    ).first()
+
+    if existing_permission:
+        return jsonify({"error": "This recipient already has active access."}), 400
+
+    candidates = [
+        {"username": recipient.username, "role": recipient.role}
+    ]
+
+    recommendation = suggest_permission(
+        document_name=document.name,
+        category=document.category,
+        sharing_reason=sharing_reason,
+        candidates=candidates
+    )
+
+    if "error" in recommendation:
+        return jsonify(recommendation), 503
+
+    return jsonify({
+        "success": True,
+        "recommendation": recommendation,
+        "message": "Review this suggestion before sharing. No access has been granted."
+    }), 200
 
 @documents.route("/share/<int:document_id>", methods=["POST"])
 @login_required

@@ -79,6 +79,14 @@
                 <span>Activity Logs</span>
             </a>
 
+            <a class="tv-side-link" href="{{ url_for('auth.profile') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 21a8 8 0 0 1 16 0"/>
+                </svg>
+                <span>My Profile</span>
+            </a>
+
             <a class="tv-side-link" href="{{ url_for('auth.settings') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>
@@ -117,12 +125,10 @@
                     <small>WELCOME BACK</small>
                     <strong>{{ current_user.username }}</strong>
                 </div>
-                <span class="tv-profile-icon">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                <a class="tv-profile-icon" href="{{ url_for('auth.profile') }}" aria-label="Open my profile" title="My Profile"><svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="4"/>
                         <path d="M4 21a8 8 0 0 1 16 0"/>
-                    </svg>
-                </span>
+                    </svg></a>
             </div>
         </header>
 
@@ -392,3 +398,5 @@
 </script>
 </body>
 </html>
+
+

@@ -1,4 +1,4 @@
-﻿import io
+import io
 import zipfile
 from pathlib import Path
 
@@ -1147,3 +1147,105 @@ def test_replacement_rejects_stored_filename_path_traversal(client, app, tmp_pat
     with app.app_context():
         document = db.session.get(Document, document_id)
         assert document.stored_filename == "../outside.pdf"
+
+
+def test_ai_suggestion_returns_recommendation_without_granting_access(
+    client, app, monkeypatch
+):
+    register_user(client, "aiowner")
+    register_user(client, "airecipient")
+
+    document_id, _ = create_document(app, "aiowner")
+
+    def fake_suggestion(**kwargs):
+        assert kwargs["sharing_reason"] == "Needs to review the report"
+        assert kwargs["candidates"] == [
+            {"username": "airecipient", "role": "Viewer"}
+        ]
+        return {
+            "username": "airecipient",
+            "permission": "view",
+            "reason": "Reading only requires view access."
+        }
+
+    monkeypatch.setattr(
+        "app.documents.routes.suggest_permission",
+        fake_suggestion
+    )
+
+    login_user(client, "aiowner")
+    response = client.post(
+        f"/documents/ai-suggest/{document_id}",
+        data={
+            "username": "airecipient",
+            "reason": "Needs to review the report"
+        }
+    )
+
+    assert response.status_code == 200
+    assert response.json["success"] is True
+    assert response.json["recommendation"]["permission"] == "view"
+
+    with app.app_context():
+        recipient = User.query.filter_by(username="airecipient").first()
+        permission = DocumentPermission.query.filter_by(
+            document_id=document_id,
+            user_id=recipient.id
+        ).first()
+        assert permission is None
+
+
+def test_non_owner_cannot_request_ai_suggestion(client, app):
+    register_user(client, "aiowner2")
+    register_user(client, "ainonowner")
+
+    document_id, _ = create_document(app, "aiowner2")
+
+    login_user(client, "ainonowner")
+    response = client.post(
+        f"/documents/ai-suggest/{document_id}",
+        data={
+            "username": "aiowner2",
+            "reason": "Needs to review the report"
+        }
+    )
+
+    assert response.status_code == 403
+
+
+def test_ai_suggestion_rejects_unknown_recipient(client, app):
+    register_user(client, "aiowner3")
+    document_id, _ = create_document(app, "aiowner3")
+
+    login_user(client, "aiowner3")
+    response = client.post(
+        f"/documents/ai-suggest/{document_id}",
+        data={
+            "username": "unknownuser",
+            "reason": "Needs to review the report"
+        }
+    )
+
+    assert response.status_code == 400
+    assert "not found" in response.json["error"].lower()
+
+
+def test_ai_suggestion_rejects_recipient_with_active_access(client, app):
+    register_user(client, "aiowner4")
+    register_user(client, "airecipient4")
+
+    document_id, _ = create_document(
+        app, "aiowner4", "airecipient4", permission="view"
+    )
+
+    login_user(client, "aiowner4")
+    response = client.post(
+        f"/documents/ai-suggest/{document_id}",
+        data={
+            "username": "airecipient4",
+            "reason": "Needs to review the report"
+        }
+    )
+
+    assert response.status_code == 400
+    assert "already has active access" in response.json["error"].lower()

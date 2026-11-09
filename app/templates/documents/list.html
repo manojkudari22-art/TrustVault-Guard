@@ -285,6 +285,17 @@
                                     {% endfor %}
                                 {% endwith %}
                             {% endif %}
+                            <div class="share-title">AI Permission Advisor</div>
+                            <div class="detail-form ai-advisor-form"
+                                 data-ai-url="{{ url_for('documents.ai_suggest_permission', document_id=document.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="text" name="ai_username" maxlength="100"
+                                       placeholder="Recipient username" required>
+                                <textarea name="ai_reason" maxlength="500" rows="3"
+                                          placeholder="Why does this person need access to the document?" required></textarea>
+                                <button class="btn" type="button">Get AI Permission Suggestion</button>
+                                <p class="doc-muted ai-suggestion-status" role="status"></p>
+                            </div>
                             <div class="share-title">Grant document access</div>
                             <form class="detail-form" method="POST" action="{{ url_for('documents.share_document', document_id=document.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -476,6 +487,73 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+    document.querySelectorAll(".ai-advisor-form").forEach(function (panel) {
+        const button = panel.querySelector("button");
+        const usernameInput = panel.querySelector('[name="ai_username"]');
+        const reasonInput = panel.querySelector('[name="ai_reason"]');
+        const csrfInput = panel.querySelector('[name="csrf_token"]');
+        const status = panel.querySelector(".ai-suggestion-status");
+
+        button.addEventListener("click", async function () {
+            const username = usernameInput.value.trim();
+            const reason = reasonInput.value.trim();
+
+            if (!username || !reason) {
+                status.textContent = "Enter the recipient username and sharing reason.";
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = "Getting suggestion...";
+            status.textContent = "Consulting local AI...";
+
+            try {
+                const response = await fetch(panel.dataset.aiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRFToken": csrfInput.value
+                    },
+                    body: new URLSearchParams({
+                        username: username,
+                        reason: reason,
+                        csrf_token: csrfInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || "Unable to get a suggestion.");
+                }
+
+                const recommendation = data.recommendation;
+                const shareForm = panel.parentElement.querySelector(
+                    'form[action*="/share/"]'
+                );
+
+                if (!shareForm) {
+                    throw new Error("The existing Share form could not be found.");
+                }
+
+                shareForm.querySelector('[name="username"]').value =
+                    recommendation.username;
+                shareForm.querySelector('[name="permission"]').value =
+                    recommendation.permission;
+
+                status.textContent =
+                    "AI suggests " + recommendation.permission.toUpperCase() +
+                    " for " + recommendation.username + ". " +
+                    recommendation.reason + " Review the Share form and click " +
+                    "Share Securely to grant access. No access has been granted yet.";
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                button.disabled = false;
+                button.textContent = "Get AI Permission Suggestion";
+            }
+        });
+    });
 </script>
 </body>
 </html>

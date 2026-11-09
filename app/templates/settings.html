@@ -1,57 +1,241 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Settings | TrustVault Guard</title>
+    <meta name="theme-color" content="#071329">
+    <title>Settings | TrustVault Guard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .tv-settings-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+            gap: 22px;
+            max-width: 1400px;
+            margin: auto;
+        }
+        .tv-settings-card {
+            padding: 28px;
+            border: 1px solid rgba(155,190,235,.17);
+            border-radius: 18px;
+            background: rgba(15,31,57,.78);
+            box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        }
+        .tv-settings-card h2 { margin: 0 0 9px; color: #edf5ff; font-size: 19px; }
+        .tv-settings-card > p { color: #9aabc4; font-size: 13px; line-height: 1.6; }
+        .tv-settings-label {
+            display: block;
+            margin-top: 20px;
+            color: #91a8c7;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .tv-settings-value { margin-top: 7px; color: #edf5ff; font-size: 15px; overflow-wrap: anywhere; }
+        .tv-settings-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 1px solid rgba(65,220,160,.25);
+            border-radius: 20px;
+            color: #75e8bd;
+            background: rgba(65,220,160,.09);
+            font-size: 12px;
+        }
+        .tv-settings-card form { margin-top: 22px; }
+        .tv-settings-card form label {
+            display: block;
+            margin: 17px 0 8px;
+            color: #c6d5e9;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .tv-settings-card form input {
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 46px;
+            padding: 12px 14px;
+            border: 1px solid rgba(155,190,235,.2);
+            border-radius: 9px;
+            outline: none;
+            color: #edf5ff;
+            background: rgba(5,16,35,.65);
+        }
+        .tv-settings-card form input:focus {
+            border-color: #70dff7;
+            box-shadow: 0 0 0 3px rgba(60,190,225,.1);
+        }
+        .tv-settings-card form button {
+            width: 100%;
+            min-height: 47px;
+            margin-top: 24px;
+            border: 0;
+            border-radius: 9px;
+            color: #06162a;
+            background: linear-gradient(110deg,#75e5f5,#75e9c1);
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .tv-settings-card form button:hover { filter: brightness(1.06); }
+        .tv-settings-tip {
+            margin-top: 20px;
+            padding: 14px;
+            border: 1px solid rgba(112,229,255,.15);
+            border-radius: 10px;
+            color: #a8c2df;
+            background: rgba(44,167,210,.07);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        @media(max-width:800px) {
+            .tv-settings-grid { grid-template-columns: 1fr; }
+            .tv-settings-card { padding: 21px; }
+        }
+    </style>
 </head>
 <body class="tv-dashboard">
-    <main class="tv-history-page">
-        <header class="tv-history-header">
-            <a href="{{ url_for('auth.dashboard') }}" class="tv-history-back">← Dashboard</a>
-            <div>
-                <h1>Account Settings</h1>
-                <p>Manage your account security.</p>
+<div class="tv-layout">
+    <button class="tv-menu-toggle" id="tvMenuToggle" type="button" aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="tv-sidebar-overlay" id="tvSidebarOverlay"></div>
+
+    <aside class="tv-sidebar" id="tvSidebar">
+        <a class="tv-brand" href="{{ url_for('auth.dashboard') }}">
+            <span class="tv-brand-icon">
+                <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                    <path d="M32 4 54 13v17c0 15-9 24-22 31C19 54 10 45 10 30V13L32 4Z" fill="#071329"/>
+                    <path d="m21 32 8 8 15-17" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <span>TrustVault <strong>Guard</strong></span>
+        </a>
+        <div class="tv-sidebar-caption">WORKSPACE</div>
+        <nav class="tv-sidebar-nav" aria-label="Main navigation">
+            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><span>Dashboard</span></a>
+            {% if current_user.role in ["Document Owner", "Administrator"] %}
+            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><span>My Documents</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><span>Owner Workspace</span></a>
+            {% endif %}
+            {% if current_user.role == "Administrator" %}
+            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><span>Admin Console</span></a>
+            {% endif %}
+            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><span>Shared With Me</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><span>Activity Logs</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.profile') }}"><span>My Profile</span></a>
+            <a class="tv-side-link active" href="{{ url_for('auth.settings') }}"><span>Settings</span></a>
+        </nav>
+        <div class="tv-sidebar-bottom">
+            <div class="tv-sidebar-security">
+                <span class="tv-security-symbol" aria-hidden="true">&#10003;</span>
+                <strong>Security first</strong>
+                <small>Your documents stay under your control.</small>
+            </div>
+            <div class="tv-sidebar-divider"></div>
+            <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="tv-side-link tv-logout-link"><span>Logout</span></button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="tv-workspace">
+        <header class="tv-topbar">
+            <div class="tv-topbar-heading">
+                <span class="tv-topbar-label">ACCOUNT PREFERENCES</span>
+                <span class="tv-topbar-subtitle">Protect and manage your TrustVault account</span>
+            </div>
+            <div class="tv-user">
+                <div class="tv-user-copy">
+                    <small>WELCOME BACK</small>
+                    <strong>{{ current_user.username }}</strong>
+                </div>
+                <span class="tv-profile-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+                    </svg>
+                </span>
             </div>
         </header>
 
-        <section class="tv-history-panel">
-            <h2>Account Information</h2>
-            <p><strong>Username:</strong> {{ current_user.username }}</p>
-            <p><strong>Email:</strong> {{ current_user.email }}</p>
-            <p><strong>Role:</strong> {{ current_user.role }}</p>
-            <p><strong>Status:</strong> {{ "Active" if current_user.is_active else "Inactive" }}</p>
-        </section>
+        <main class="tv-main">
+            <div class="tv-content">
+                <header class="tv-history-header">
+                    <div>
+                        <h1>Account Settings</h1>
+                        <p>Manage your account security and sign-in credentials.</p>
+                    </div>
+                </header>
 
-        <section class="tv-history-panel">
-            <h2>Change Password</h2>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
+                {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
-                        <div class="tv-alert tv-alert-{{ category }}">{{ message }}</div>
+                    <div class="tv-alert tv-alert-{{ category }}">{{ message }}</div>
                     {% endfor %}
-                {% endif %}
-            {% endwith %}
+                {% endwith %}
 
-            <form method="POST" action="{{ url_for('auth.settings') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="tv-settings-grid">
+                    <section class="tv-settings-card">
+                        <h2>Account Overview</h2>
+                        <p>Your current TrustVault account information.</p>
+                        <span class="tv-settings-label">Username</span>
+                        <div class="tv-settings-value">{{ current_user.username }}</div>
+                        <span class="tv-settings-label">Email Address</span>
+                        <div class="tv-settings-value">{{ current_user.email }}</div>
+                        <span class="tv-settings-label">Account Role</span>
+                        <div class="tv-settings-value">{{ current_user.role }}</div>
+                        <span class="tv-settings-label">Account Status</span>
+                        <div class="tv-settings-value">
+                            <span class="tv-settings-status">{{ "Active" if current_user.is_active else "Inactive" }}</span>
+                        </div>
+                        <div class="tv-settings-tip">
+                            Need to change your username or email? Visit
+                            <a href="{{ url_for('auth.profile') }}" style="color:#70e5ff">My Profile</a>.
+                        </div>
+                    </section>
 
-                <label for="current_password">Current Password</label>
-                <input type="password" id="current_password" name="current_password" required>
+                    <section class="tv-settings-card">
+                        <h2>Password &amp; Security</h2>
+                        <p>Change your password to help keep your documents protected.</p>
+                        <form method="POST" action="{{ url_for('auth.settings') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+                            <label for="new_password">New Password</label>
+                            <input type="password" id="new_password" name="new_password" minlength="8" autocomplete="new-password" required>
+                            <label for="confirm_password">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" minlength="8" autocomplete="new-password" required>
+                            <button type="submit">Update Password Securely</button>
+                        </form>
+                        <div class="tv-settings-tip">
+                            Use at least 8 characters. Choose a unique password that you do not use on other websites.
+                        </div>
+                    </section>
+                </div>
+                <footer class="tv-history-footer">TrustVault Guard � Account Security Center</footer>
+            </div>
+        </main>
+    </div>
+</div>
 
-                <label for="new_password">New Password</label>
-                <input type="password" id="new_password" name="new_password" minlength="8" required>
+<script>
+(function () {
+    const toggle = document.getElementById("tvMenuToggle");
+    const sidebar = document.getElementById("tvSidebar");
+    const overlay = document.getElementById("tvSidebarOverlay");
+    if (!toggle || !sidebar || !overlay) return;
 
-                <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" minlength="8" required>
-
-                <button type="submit">Update Password</button>
-            </form>
-        </section>
-
-        <footer class="tv-history-footer">TrustVault Guard · Account Security</footer>
-    </main>
+    function closeMenu() {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+    }
+    toggle.addEventListener("click", function () {
+        const isOpen = sidebar.classList.toggle("open");
+        overlay.classList.toggle("open", isOpen);
+        toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+    overlay.addEventListener("click", closeMenu);
+})();
+</script>
 </body>
 </html>

@@ -195,3 +195,47 @@ def settings():
             return redirect(url_for("auth.settings"))
 
     return render_template("settings.html")
+
+@auth.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        current_password = request.form.get("current_password", "")
+
+        if not username or not email:
+            flash("Username and email are required.", "error")
+        elif len(username) > 80 or len(email) > 120:
+            flash("Username or email exceeds the allowed length.", "error")
+        elif "@" not in email:
+            flash("Enter a valid email address.", "error")
+        elif not current_user.check_password(current_password):
+            flash("Current password is incorrect.", "error")
+        elif User.query.filter(User.username == username, User.id != current_user.id).first():
+            flash("Username already exists.", "error")
+        elif User.query.filter(User.email == email, User.id != current_user.id).first():
+            flash("Email already exists.", "error")
+        elif username == current_user.username and email == current_user.email:
+            flash("No profile changes detected.", "error")
+        else:
+            current_user.username = username
+            current_user.email = email
+
+            try:
+                log_audit_event(
+                    current_user.id,
+                    None,
+                    "PROFILE_UPDATED",
+                    "Account profile information updated",
+                    commit=False
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                raise
+
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for("auth.profile"))
+
+    return render_template("profile.html")
