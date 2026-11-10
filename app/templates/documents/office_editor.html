@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Document Editor | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #08111f;
+            color: #e2e8f0;
+        }
+
+        .office-page {
+            width: min(1500px, 96%);
+            margin: 24px auto;
+        }
+
+        .office-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .office-title {
+            margin: 0;
+            font-size: clamp(19px, 3vw, 27px);
+        }
+
+        .office-meta {
+            margin-top: 6px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .office-back {
+            color: #67e8f9;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .office-status {
+            margin: 12px 0;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .office-frame {
+            width: 100%;
+            height: calc(100vh - 155px);
+            min-height: 600px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        #office-editor {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 600px) {
+            .office-page {
+                width: 98%;
+                margin: 12px auto;
+            }
+
+            .office-frame {
+                height: calc(100vh - 145px);
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="office-page">
+    <header class="office-header">
+        <div>
+            <h1 class="office-title">Online Document Editor</h1>
+            <div class="office-meta">
+                {{ document.original_filename }} · TrustVault Guard
+            </div>
+        </div>
+        <a class="office-back" href="{{ url_for(back_endpoint) }}">
+            ← Back to Documents
+        </a>
+    </header>
+
+    <p id="office-status" class="office-status" role="status">
+        Connecting to the secure document editor...
+    </p>
+
+    <section class="office-frame">
+        <div id="office-editor"></div>
+    </section>
+</main>
+
+<script src="{{ document_server_url }}/web-apps/apps/api/documents/api.js"></script>
+<script>
+    const editorConfig = {{ editor_config|tojson }};
+    const statusElement = document.getElementById("office-status");
+
+    if (window.DocsAPI && window.DocsAPI.DocEditor) {
+        editorConfig.events = {
+            onDocumentReady: function () {
+                statusElement.textContent =
+                    "Editor ready. Use the editor toolbar to save your changes.";
+            },
+            onDocumentStateChange: function (event) {
+                statusElement.textContent = event.data
+                    ? "Unsaved changes detected."
+                    : "All changes saved.";
+            },
+            onError: function (event) {
+                statusElement.textContent =
+                    "Editor error. Please reload or return to your documents.";
+                console.error("ONLYOFFICE editor error:", event.data);
+            }
+        };
+
+        window.trustVaultOfficeEditor =
+            new DocsAPI.DocEditor("office-editor", editorConfig);
+    } else {
+        statusElement.textContent =
+            "Unable to connect to the document server. Please try again.";
+    }
+</script>
+</body>
+</html>

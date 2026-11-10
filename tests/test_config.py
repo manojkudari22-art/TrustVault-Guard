@@ -8,6 +8,7 @@ CONFIG_PATH = Path(__file__).resolve().parents[1] / "config.py"
 
 
 def load_config(monkeypatch, environment, secret_key=None):
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.setenv("FLASK_ENV", environment)
 
     if secret_key is None:
@@ -25,6 +26,7 @@ def test_development_uses_fallback_secret_key(monkeypatch):
 
 
 def test_production_rejects_missing_secret_key(monkeypatch):
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.setenv("FLASK_ENV", "production")
     monkeypatch.delenv("SECRET_KEY", raising=False)
 

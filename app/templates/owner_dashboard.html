@@ -19,6 +19,15 @@
 </nav>
 
 <main class="tv-main">
+<button type="button" class="tv-back-button"
+        data-fallback="{{ url_for('auth.dashboard') }}"
+        onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = this.dataset.fallback; }"
+        aria-label="Go back to previous page">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M19 12H5 M12 19l-7-7 7-7"/>
+    </svg>
+    <span>Back</span>
+</button>
   <section class="tv-welcome">
     <div>
       <div class="tv-eyebrow">DOCUMENT MANAGEMENT</div>
@@ -37,6 +46,16 @@
 
   <section class="tv-section-heading"><h2>Quick Access</h2><p>Navigate through your workspace</p></section>
   <section class="tv-actions">
+    <a class="tv-action-card" href="{{ url_for('documents.owner_edit_requests') }}">
+      <span class="tv-action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="m16 3 5 5M10 14l8-8 3 3-8 8-4 1z"/>
+        </svg>
+      </span>
+      <span><strong>Owner Edit Requests</strong><small>Review and approve administrator edit requests</small></span>
+      <span class="tv-arrow" aria-hidden="true">&#8594;</span>
+    </a>
       <a class="tv-action-card" href="{{ url_for('documents.my_documents') }}"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/><path d="M3 10h18"/></svg></span><span><strong>My Documents</strong><small>Search and manage uploaded documents</small></span><span class="tv-arrow">→</span></a>
     <a class="tv-action-card" href="{{ url_for('auth.dashboard') }}"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><span><strong>Back to Dashboard</strong><small>Return to your secure workspace</small></span><span class="tv-arrow" aria-hidden="true">&#8594;</span></a>
     <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="tv-action-card"><span class="tv-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg></span><span><strong>Sign Out</strong><small>Securely end your session</small></span><span class="tv-arrow" aria-hidden="true">&#8594;</span></button></form>

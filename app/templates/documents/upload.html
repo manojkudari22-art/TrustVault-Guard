@@ -68,7 +68,43 @@
         .upload-submit:hover { background: #1d4ed8; transform: translateY(-2px); }
         .upload-muted { color: #94a3b8; }
         .upload-back { color: #60a5fa; text-decoration: none; }
-        .upload-flash { margin: 15px 0; color: #fca5a5; }
+
+        .upload-flash {
+            margin: 16px 0; padding: 13px 16px; border-radius: 11px;
+            font-size: 14px; font-weight: 650; line-height: 1.5;
+            border: 1px solid transparent;
+        }
+        .upload-flash-success {
+            color: #a7f3d0; background: rgba(6,95,70,.22);
+            border-color: rgba(52,211,153,.38);
+        }
+        .upload-flash-error {
+            color: #fecaca; background: rgba(127,29,29,.22);
+            border-color: rgba(248,113,113,.4);
+        }
+        .upload-flash-warning {
+            color: #fde68a; background: rgba(120,83,10,.2);
+            border-color: rgba(251,191,36,.38);
+        }
+
+
+        .upload-file-preview { display:none; width:100%; box-sizing:border-box; align-items:center; gap:14px; padding:16px; border:1px solid rgba(72,198,255,.3); border-radius:13px; background:rgba(5,18,35,.65); text-align:left; }
+        .upload-drop.has-file + .upload-file-preview { display:flex; }
+        .upload-drop.has-file > #upload-title,
+        .upload-drop.has-file > #upload-help,
+        .upload-drop.has-file > #upload-browse,
+        .upload-drop.has-file > .upload-icon { display:none; }
+        .upload-file-type { padding:14px; border-radius:10px; color:#70d5ff; background:rgba(72,198,255,.13); font-weight:800; }
+        .upload-file-info { min-width:0; flex:1; display:grid; gap:6px; overflow-wrap:anywhere; }
+        .upload-file-info strong { color:#eaf4ff; }
+        .upload-file-info small { color:#91a9c2; }
+        .upload-file-actions { display:flex; gap:7px; }
+        .upload-file-actions button { padding:8px 11px; border:1px solid rgba(100,190,255,.3); border-radius:8px; color:#bfeaff; background:rgba(35,75,112,.4); cursor:pointer; }
+        .upload-drop.has-file { border-style:solid; border-color:rgba(52,211,153,.55); background:rgba(16,75,75,.16); }
+        .upload-card { background:linear-gradient(145deg,rgba(15,35,62,.96),rgba(8,20,39,.98)); border-color:rgba(72,198,255,.25); box-shadow:0 22px 65px rgba(0,0,0,.28); }
+        .upload-drop { min-height:210px; justify-content:center; background:rgba(18,48,78,.3); }
+        @media(max-width:600px) { .upload-file-preview { flex-wrap:wrap; } .upload-page { margin:20px auto; padding:16px; } }
+
     </style>
 </head>
 <body>
@@ -80,7 +116,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <p class="upload-flash">{{ message }}</p>
+                <div class="upload-flash upload-flash-{{ category }}" role="alert">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
@@ -103,12 +139,23 @@
                 </span>
                 <strong id="upload-title">Drop your document here</strong>
                 <span class="upload-muted" id="upload-help">or click to browse files</span>
-                <span class="upload-button">Choose File</span>
+                <span class="upload-button" id="upload-browse">Choose File</span>
                 <input type="file" id="upload-file" name="file" required
                        accept=".pdf,.doc,.docx,.pptx,.xlsx,.txt,.csv">
             </label>
+            <div class="upload-file-preview" id="upload-file-preview">
+                <span class="upload-file-type" id="upload-file-type">FILE</span>
+                <span class="upload-file-info">
+                    <strong id="upload-file-name"></strong>
+                    <small id="upload-file-meta"></small>
+                </span>
+                <span class="upload-file-actions">
+                    <button type="button" id="change-upload-file">Change</button>
+                    <button type="button" id="remove-upload-file">Remove</button>
+                </span>
+            </div>
 
-            <p class="upload-muted" id="upload-size">No file selected</p>
+            <p class="upload-muted" id="upload-size" aria-live="polite"></p>
 
             <label for="category">Document Category</label>
             <input class="upload-category" type="text" id="category"
@@ -125,22 +172,36 @@ const drop = document.getElementById("upload-drop");
 
 function showFile(file) {
     if (!file) return;
-    document.getElementById("upload-title").textContent = file.name;
-    document.getElementById("upload-help").textContent = "File selected";
-    document.getElementById("upload-size").textContent =
-        (file.size / 1024).toFixed(1) + " KB";
+    const ext = file.name.includes(".") ? file.name.split(".").pop().toUpperCase() : "FILE";
+    document.getElementById("upload-file-name").textContent = file.name;
+    document.getElementById("upload-file-type").textContent = ext.slice(0, 5);
+    document.getElementById("upload-file-meta").textContent =
+        (file.size < 1048576 ? (file.size / 1024).toFixed(1) + " KB" :
+        (file.size / 1048576).toFixed(2) + " MB") + " · Ready to upload";
+    drop.classList.add("has-file");
 }
 
 input.addEventListener("change", () => showFile(input.files[0]));
+
+document.getElementById("change-upload-file").addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    input.click();
+});
+
+document.getElementById("remove-upload-file").addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    input.value = "";
+    drop.classList.remove("has-file");
+});
 
 drop.addEventListener("dragover", event => {
     event.preventDefault();
     drop.classList.add("drag-active");
 });
 
-drop.addEventListener("dragleave", () => {
-    drop.classList.remove("drag-active");
-});
+drop.addEventListener("dragleave", () => drop.classList.remove("drag-active"));
 
 drop.addEventListener("drop", event => {
     event.preventDefault();

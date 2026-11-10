@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,8 +6,77 @@
     <meta name="theme-color" content="#071329">
     <title>My Profile | TrustVault Guard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+
+        .tv-profile-heading {
+            display: flex; align-items: center; gap: 17px;
+        }
+        .tv-profile-heading-avatar {
+            width: 66px; height: 66px; flex: 0 0 66px;
+            display: grid; place-items: center; border-radius: 20px;
+            color: #69d5ff;
+            border: 1px solid rgba(72,198,255,.32);
+            background: linear-gradient(145deg,rgba(29,110,158,.28),rgba(25,48,82,.62));
+            box-shadow: inset 0 0 20px rgba(72,198,255,.09),0 8px 24px rgba(0,0,0,.16);
+        }
+        .tv-profile-heading-avatar svg { width: 34px; height: 34px; }
+        .tv-profile-heading h1 { margin-top: 0; }
+        @media(max-width:520px) {
+            .tv-profile-heading { gap: 12px; }
+            .tv-profile-heading-avatar {
+                width: 54px; height: 54px; flex-basis: 54px; border-radius: 16px;
+            }
+            .tv-profile-heading-avatar svg { width: 28px; height: 28px; }
+        }
+
+
+        /* TrustVault My Profile heading polish */
+        @keyframes tvProfileHeadingEnter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tvProfileAvatarFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .tv-profile-heading h1 {
+            font-size: clamp(1.45rem, 3vw, 2.1rem);
+            line-height: 1.2;
+            letter-spacing: -.025em;
+            animation: tvProfileHeadingEnter .65s ease both;
+        }
+        .tv-profile-heading-avatar {
+            animation: tvProfileAvatarFloat 4s ease-in-out infinite;
+        }
+        .tv-profile-page .tv-history-panel h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(1.05rem, 2vw, 1.3rem);
+            line-height: 1.35;
+        }
+        .tv-profile-page .tv-history-panel h2::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 2px;
+            background: #55c9ff;
+            box-shadow: 0 0 12px rgba(85,201,255,.45);
+        }
+        @media(max-width:520px) {
+            .tv-profile-heading h1 { font-size: clamp(1.35rem, 6vw, 1.7rem); }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .tv-profile-heading h1,
+            .tv-profile-heading-avatar {
+                animation: none !important;
+            }
+        }
+
+</style>
 </head>
-<body class="tv-dashboard">
+<body class="tv-dashboard tv-profile-page">
 <div class="tv-layout">
     <button class="tv-menu-toggle" id="tvMenuToggle" type="button" aria-label="Open navigation" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -27,18 +96,18 @@
 
         <div class="tv-sidebar-caption">WORKSPACE</div>
         <nav class="tv-sidebar-nav" aria-label="Main navigation">
-            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><span>Dashboard</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3z"/></svg><span>Dashboard</span></a>
             {% if current_user.role in ["Document Owner", "Administrator"] %}
-            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><span>My Documents</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><span>Owner Workspace</span></a>
+            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"/></svg><span>My Documents</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z M12 12v9"/></svg><span>Owner Workspace</span></a>
             {% endif %}
             {% if current_user.role == "Administrator" %}
-            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><span>Admin Console</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 14.5 9h6l-5 3.8 2 6.2-5.5-3.8L6.5 19l2-6.2-5-3.8h6z"/></svg><span>Admin Console</span></a>
             {% endif %}
-            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><span>Shared With Me</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><span>Activity Logs</span></a>
-            <a class="tv-side-link active" href="{{ url_for('auth.profile') }}"><span>My Profile</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.settings') }}"><span>Settings</span></a>
+            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12m-4-4 4 4-4 4M16 17H4m4-4-4 4 4 4"/></svg><span>Shared With Me</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Activity Logs</span></a>
+            <a class="tv-side-link active" href="{{ url_for('auth.profile') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0 M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><span>My Profile</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.settings') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M19 13l2 2-2 3-3-1-2 1v3h-4v-3l-2-1-3 1-2-3 2-2v-2l-2-2 2-3 3 1 2-1V3h4v3l2 1 3-1 2 3-2 2z"/></svg><span>Settings</span></a>
         </nav>
 
         <div class="tv-sidebar-bottom">
@@ -50,7 +119,7 @@
             <div class="tv-sidebar-divider"></div>
             <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="tv-side-link tv-logout-link"><span>Logout</span></button>
+                <button type="submit" class="tv-side-link tv-logout-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3 M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span>Logout</span></button>
             </form>
         </div>
     </aside>
@@ -77,9 +146,27 @@
         <main class="tv-main">
             <div class="tv-content">
                 <header class="tv-history-header">
-                    <div>
-                        <h1>My Profile</h1>
-                        <p>View and update your account information.</p>
+                    <button type="button" class="tv-back-button"
+                            data-fallback="{{ url_for('auth.dashboard') }}"
+                            onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = this.dataset.fallback; }"
+                            aria-label="Go back to previous page">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19 12H5 M12 19l-7-7 7-7"/>
+                        </svg>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <div class="tv-profile-heading">
+                        <span class="tv-profile-heading-avatar" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 21a8 8 0 0 1 16 0"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <h1>My Profile</h1>
+                            <p>View and update your account information.</p>
+                        </div>
                     </div>
                 </header>
 
@@ -109,31 +196,41 @@
                         <button type="submit">Save Profile Changes</button>
                     </form>
                 </section>
-                <footer class="tv-history-footer">TrustVault Guard � Secure Profile Management</footer>
+                <footer class="tv-history-footer">TrustVault Guard Â· Secure Profile Management</footer>
             </div>
         </main>
     </div>
 </div>
 
 <script>
-(function () {
+(() => {
     const toggle = document.getElementById("tvMenuToggle");
     const sidebar = document.getElementById("tvSidebar");
     const overlay = document.getElementById("tvSidebarOverlay");
+
     if (!toggle || !sidebar || !overlay) return;
 
-    function closeMenu() {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
+    function setMenu(open) {
+        sidebar.classList.toggle("tv-sidebar-open", open);
+        overlay.classList.toggle("tv-overlay-visible", open);
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+        document.body.classList.toggle("tv-menu-active", open);
     }
 
-    toggle.addEventListener("click", function () {
-        const isOpen = sidebar.classList.toggle("open");
-        overlay.classList.toggle("open", isOpen);
-        toggle.setAttribute("aria-expanded", String(isOpen));
+    toggle.addEventListener("click", () => {
+        setMenu(!sidebar.classList.contains("tv-sidebar-open"));
     });
-    overlay.addEventListener("click", closeMenu);
+
+    overlay.addEventListener("click", () => setMenu(false));
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") setMenu(false);
+    });
+
+    sidebar.querySelectorAll("a").forEach(link => {
+        link.addEventListener("click", () => setMenu(false));
+    });
 })();
 </script>
 </body>

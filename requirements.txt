@@ -6,3 +6,7 @@ Flask-Bcrypt
 python-dotenv
 pytest
 gunicorn
+
+PyJWT>=2.10,<3
+
+PyMuPDF>=1.24,<2

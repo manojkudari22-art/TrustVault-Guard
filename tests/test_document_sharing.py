@@ -1,4 +1,4 @@
-import io
+﻿import io
 import zipfile
 from pathlib import Path
 
@@ -9,6 +9,7 @@ from app.audit.models import AuditLog
 from app.auth.models import User
 from app.documents.models import Document
 from app.documents.permissions import DocumentPermission
+from app.documents.edit_requests import DocumentEditRequest
 
 
 @pytest.fixture
@@ -370,7 +371,7 @@ def test_document_owner_can_replace_content(client, app):
 
     with app.app_context():
         document = db.session.get(Document, document_id)
-        assert document.name == "Security Test Report"
+        assert document.name == "replacement.pdf"
         assert document.original_filename == "replacement.pdf"
         new_filename = document.stored_filename
 
@@ -390,16 +391,17 @@ def test_document_owner_can_replace_content(client, app):
     assert not old_path.exists()
 
 
-def test_edit_permission_user_can_replace_content(client, app):
+def test_edit_permission_user_cannot_replace_content(client, app):
     register_user(client, "replaceowner2")
     register_user(client, "replaceeditor")
 
-    document_id, _ = create_document(
+    document_id, original_path = create_document(
         app,
         "replaceowner2",
         "replaceeditor",
         permission="edit",
     )
+    original_bytes = original_path
 
     login_user(client, "replaceeditor")
 
@@ -407,7 +409,7 @@ def test_edit_permission_user_can_replace_content(client, app):
         f"/documents/replace/{document_id}",
         data={
             "file": (
-                io.BytesIO(b"%PDF-1.7\nEditor replacement content"),
+                io.BytesIO(b"%PDF-1.7\\nUnauthorized replacement content"),
                 "editor-replacement.pdf",
                 "application/pdf",
             )
@@ -420,20 +422,16 @@ def test_edit_permission_user_can_replace_content(client, app):
     with app.app_context():
         document = db.session.get(Document, document_id)
         assert document.name == "Security Test Report"
-        assert document.original_filename == "editor-replacement.pdf"
-        new_filename = document.stored_filename
+        assert document.original_filename != "editor-replacement.pdf"
+        assert Path(
+            app.config["UPLOAD_FOLDER"], document.stored_filename
+        ).read_bytes() == original_bytes
 
         event = AuditLog.query.filter_by(
             document_id=document_id,
             action="DOCUMENT_CONTENT_REPLACED",
         ).first()
-        assert event is not None
-        assert event.user_id == User.query.filter_by(
-            username="replaceeditor"
-        ).first().id
-
-    new_path = Path(app.config["UPLOAD_FOLDER"], new_filename)
-    assert new_path.read_bytes() == b"%PDF-1.7\nEditor replacement content"
+        assert event is None
 
 
 @pytest.mark.parametrize(
@@ -907,11 +905,11 @@ def test_document_owner_can_edit_txt_content(client, app):
     assert not Path(app.config["UPLOAD_FOLDER"], old_filename).exists()
 
 
-def test_viewer_with_edit_permission_can_edit_txt(client, app):
+def test_viewer_with_edit_permission_cannot_edit_txt(client, app):
     register_user(client, "contentowner")
     register_user(client, "contenteditor")
 
-    document_id, _ = create_text_document(
+    document_id, stored_filename = create_text_document(
         app,
         "contentowner",
         b"Before edit",
@@ -922,23 +920,22 @@ def test_viewer_with_edit_permission_can_edit_txt(client, app):
 
     response = client.post(
         f"/documents/edit-content/{document_id}",
-        data={"content": "Edited by permitted viewer"},
+        data={"content": "Unauthorized viewer edit"},
         follow_redirects=True,
     )
     assert response.status_code == 200
 
     with app.app_context():
-        document = db.session.get(Document, document_id)
         content = Path(
-            app.config["UPLOAD_FOLDER"], document.stored_filename
+            app.config["UPLOAD_FOLDER"], stored_filename
         ).read_bytes()
         event = AuditLog.query.filter_by(
             document_id=document_id,
             action="DOCUMENT_CONTENT_EDITED",
         ).first()
 
-    assert content == b"Edited by permitted viewer"
-    assert event is not None
+    assert content == b"Before edit"
+    assert event is None
 
 
 @pytest.mark.parametrize(
@@ -1249,3 +1246,306 @@ def test_ai_suggestion_rejects_recipient_with_active_access(client, app):
 
     assert response.status_code == 400
     assert "already has active access" in response.json["error"].lower()
+
+def test_owner_can_view_documents_shared_by_me(client, app):
+    register_user(client, "outboundowner")
+    register_user(client, "outboundviewer")
+    create_document(app, "outboundowner", "outboundviewer")
+    login_user(client, "outboundowner")
+
+    response = client.get("/documents/shared-by-me")
+
+    assert response.status_code == 200
+    assert b"Security Test Report" in response.data
+    assert b"outboundviewer" in response.data
+    assert b"View" in response.data
+    assert b"Active access" in response.data
+
+
+def test_shared_by_me_search_matches_recipient(client, app):
+    register_user(client, "searchowner")
+    register_user(client, "searchrecipient")
+    create_document(app, "searchowner", "searchrecipient", permission="download")
+    login_user(client, "searchowner")
+
+    response = client.get("/documents/shared-by-me?q=searchrecipient")
+
+    assert response.status_code == 200
+    assert b"searchrecipient" in response.data
+    assert b"Download" in response.data
+
+
+def test_viewer_cannot_access_shared_by_me(client, app):
+    register_user(client, "restrictedviewer")
+    login_user(client, "restrictedviewer")
+
+    response = client.get("/documents/shared-by-me")
+
+    assert response.status_code == 302
+    assert "/dashboard" in response.headers["Location"]
+
+
+def test_revoked_share_appears_as_revoked(client, app):
+    register_user(client, "revokedowner")
+    register_user(client, "revokedrecipient")
+    create_document(
+        app,
+        "revokedowner",
+        "revokedrecipient",
+        permission="view",
+        active=False,
+    )
+    login_user(client, "revokedowner")
+
+    response = client.get("/documents/shared-by-me")
+
+    assert response.status_code == 200
+    assert b"revokedrecipient" in response.data
+    assert b"Access revoked" in response.data
+
+
+
+def test_admin_can_request_document_edit_access(client, app):
+    register_user(client, "editrequestowner")
+    register_user(client, "editrequestadmin")
+
+    document_id, _ = create_document(
+        app,
+        "editrequestowner",
+    )
+
+    with app.app_context():
+        admin = User.query.filter_by(username="editrequestadmin").first()
+        admin.role = "Administrator"
+        db.session.commit()
+
+    login_user(client, "editrequestadmin")
+
+    response = client.post(
+        f"/documents/request-edit/{document_id}",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        edit_request = DocumentEditRequest.query.filter_by(
+            document_id=document_id,
+            status="pending",
+        ).first()
+
+        assert edit_request is not None
+        assert edit_request.owner_id == User.query.filter_by(
+            username="editrequestowner"
+        ).first().id
+        assert edit_request.admin_id == User.query.filter_by(
+            username="editrequestadmin"
+        ).first().id
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="ADMIN_EDIT_REQUESTED",
+        ).first()
+        assert event is not None
+        assert event.user_id == edit_request.admin_id
+
+
+def test_document_owner_can_approve_admin_edit_request(client, app):
+    register_user(client, "approvalowner")
+    register_user(client, "approvaladmin")
+
+    document_id, _ = create_document(app, "approvalowner")
+
+    with app.app_context():
+        admin = User.query.filter_by(username="approvaladmin").first()
+        admin.role = "Administrator"
+        db.session.commit()
+
+    login_user(client, "approvaladmin")
+    client.post(f"/documents/request-edit/{document_id}")
+
+    with app.app_context():
+        edit_request = DocumentEditRequest.query.filter_by(
+            document_id=document_id,
+            status="pending",
+        ).first()
+        assert edit_request is not None
+        request_id = edit_request.id
+
+    login_user(client, "approvalowner")
+    response = client.post(
+        f"/documents/edit-request/{request_id}/approve",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        edit_request = db.session.get(DocumentEditRequest, request_id)
+        assert edit_request.status == "approved"
+        assert edit_request.responded_at is not None
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="ADMIN_EDIT_APPROVED",
+        ).first()
+        assert event is not None
+
+
+def test_admin_edit_requires_owner_approval_and_can_be_revoked(client, app):
+    register_user(client, "workflowowner")
+    register_user(client, "workflowadmin")
+
+    document_id, original_bytes = create_document(app, "workflowowner")
+
+    with app.app_context():
+        admin = User.query.filter_by(username="workflowadmin").first()
+        admin.role = "Administrator"
+        db.session.commit()
+
+    def replace_file(filename, file_bytes):
+        return client.post(
+            f"/documents/replace/{document_id}",
+            data={
+                "file": (
+                    io.BytesIO(file_bytes),
+                    filename,
+                    "application/pdf",
+                )
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+
+    login_user(client, "workflowadmin")
+
+    # Stage 1: Admin cannot replace before requesting approval.
+    denied_bytes = b"%PDF-1.7\nDenied replacement"
+    response = replace_file("before-approval.pdf", denied_bytes)
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.original_filename == "report.pdf"
+        assert Path(app.config["UPLOAD_FOLDER"], document.stored_filename).read_bytes() == original_bytes
+
+    # Stage 2: Admin requests access; request remains pending.
+    client.post(f"/documents/request-edit/{document_id}")
+
+    with app.app_context():
+        edit_request = DocumentEditRequest.query.filter_by(
+            document_id=document_id,
+            status="pending",
+        ).first()
+        assert edit_request is not None
+        request_id = edit_request.id
+
+    pending_bytes = b"%PDF-1.7\nPending replacement"
+    replace_file("pending-approval.pdf", pending_bytes)
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.original_filename == "report.pdf"
+        assert Path(app.config["UPLOAD_FOLDER"], document.stored_filename).read_bytes() == original_bytes
+
+    # Stage 3: Owner approves the specific Admin request.
+    login_user(client, "workflowowner")
+    response = client.post(
+        f"/documents/edit-request/{request_id}/approve",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        edit_request = db.session.get(DocumentEditRequest, request_id)
+        assert edit_request.status == "approved"
+
+    # Stage 4: Approved Admin can replace the document.
+    login_user(client, "workflowadmin")
+    approved_bytes = b"%PDF-1.7\nApproved administrator replacement"
+    response = replace_file("approved-replacement.pdf", approved_bytes)
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.original_filename == "approved-replacement.pdf"
+        assert Path(app.config["UPLOAD_FOLDER"], document.stored_filename).read_bytes() == approved_bytes
+
+        replacement_event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="DOCUMENT_CONTENT_REPLACED",
+        ).first()
+        assert replacement_event is not None
+
+    # Stage 5: Owner revokes the Admin's approval.
+    login_user(client, "workflowowner")
+    response = client.post(
+        f"/documents/edit-request/{request_id}/revoke",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        edit_request = db.session.get(DocumentEditRequest, request_id)
+        assert edit_request.status == "revoked"
+
+    # Stage 6: Admin cannot replace after revocation.
+    login_user(client, "workflowadmin")
+    revoked_bytes = b"%PDF-1.7\nRevoked access replacement"
+    response = replace_file("after-revocation.pdf", revoked_bytes)
+    assert response.status_code == 200
+
+    with app.app_context():
+        document = db.session.get(Document, document_id)
+        assert document.original_filename == "approved-replacement.pdf"
+        assert Path(app.config["UPLOAD_FOLDER"], document.stored_filename).read_bytes() == approved_bytes
+
+        for action in (
+            "ADMIN_EDIT_REQUESTED",
+            "ADMIN_EDIT_APPROVED",
+            "ADMIN_EDIT_REVOKED",
+            "DOCUMENT_CONTENT_REPLACED",
+        ):
+            assert AuditLog.query.filter_by(
+                document_id=document_id,
+                action=action,
+            ).first() is not None
+
+
+def test_document_owner_can_reject_admin_edit_request(client, app):
+    register_user(client, "rejectionowner")
+    register_user(client, "rejectionadmin")
+
+    document_id, _ = create_document(app, "rejectionowner")
+
+    with app.app_context():
+        admin = User.query.filter_by(username="rejectionadmin").first()
+        admin.role = "Administrator"
+        db.session.commit()
+
+    login_user(client, "rejectionadmin")
+    client.post(f"/documents/request-edit/{document_id}")
+
+    with app.app_context():
+        edit_request = DocumentEditRequest.query.filter_by(
+            document_id=document_id,
+            status="pending",
+        ).first()
+        assert edit_request is not None
+        request_id = edit_request.id
+
+    login_user(client, "rejectionowner")
+    response = client.post(
+        f"/documents/edit-request/{request_id}/reject",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        edit_request = db.session.get(DocumentEditRequest, request_id)
+        assert edit_request.status == "rejected"
+        assert edit_request.responded_at is not None
+
+        event = AuditLog.query.filter_by(
+            document_id=document_id,
+            action="ADMIN_EDIT_REJECTED",
+        ).first()
+        assert event is not None

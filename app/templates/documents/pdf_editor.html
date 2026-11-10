@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Editor | TrustVault Guard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<style>
+.pdf-editor {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 20px;
+    color: #e2e8f0;
+}
+.pdf-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 18px 0;
+    padding: 14px;
+    background: #111827;
+    border: 1px solid #334155;
+    border-radius: 14px;
+}
+.pdf-toolbar button, .pdf-save {
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #1e293b;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+.pdf-toolbar button.active {
+    background: #075985;
+    border-color: #38bdf8;
+}
+.pdf-save {
+    background: #047857;
+    border-color: #10b981;
+    font-weight: 700;
+}
+.pdf-toolbar button:disabled, .pdf-save:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+.pdf-stage {
+    min-height: 450px;
+    padding: 20px;
+    overflow: auto;
+    background: #0b1220;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    text-align: center;
+}
+.pdf-canvas-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    line-height: 0;
+    background: white;
+    box-shadow: 0 12px 35px #0008;
+    touch-action: none;
+}
+.pdf-canvas-wrap img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+#annotationCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+.pdf-status {
+    margin: 12px 0;
+    color: #94a3b8;
+    min-height: 24px;
+}
+.pdf-back {
+    color: #7dd3fc;
+    text-decoration: none;
+}
+.pdf-help {
+    color: #94a3b8;
+    font-size: 13px;
+}
+@media(max-width: 650px) {
+    .pdf-editor { padding: 10px; }
+    .pdf-toolbar { gap: 7px; }
+    .pdf-toolbar button, .pdf-save { padding: 9px; }
+    .pdf-stage { padding: 8px; }
+}
+</style>
+
+<main class="pdf-editor">
+    <a class="pdf-back" href="{{ url_for(back_endpoint) }}">← Back to documents</a>
+    <h2>PDF Editor</h2>
+    <p>{{ document.original_filename }}</p>
+    <p class="pdf-help">
+        Add text, highlight page areas or draw on your PDF. These tools create
+        PDF annotations; they do not rewrite existing embedded paragraphs.
+    </p>
+
+    <div class="pdf-toolbar">
+        <button type="button" id="textTool">Add Text</button>
+        <button type="button" id="highlightTool">Highlight</button>
+        <button type="button" id="drawTool">Draw</button>
+        <button type="button" id="undoTool">Undo</button>
+        <button type="button" id="previousPage">Previous</button>
+        <span id="pageIndicator">Page 1 / {{ page_count }}</span>
+        <button type="button" id="nextPage">Next</button>
+        <button type="button" class="pdf-save" id="savePdf">Save Changes</button>
+    </div>
+
+    <div class="pdf-stage">
+        <div class="pdf-canvas-wrap" id="canvasWrap">
+            <img id="pdfPage" alt="PDF page preview">
+            <canvas id="annotationCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="pdf-status" id="pdfStatus" role="status" aria-live="polite">
+        Loading PDF page...
+    </div>
+</main>
+
+<script>
+(() => {
+    "use strict";
+
+    const documentId = {{ document.id | tojson }};
+    let version = {{ document_version | tojson }};
+    const pageCount = {{ page_count | tojson }};
+    let currentPage = 0;
+    let activeTool = null;
+    let pending = [];
+    let drawing = false;
+    let startPoint = null;
+    let currentPoints = [];
+
+    const image = document.getElementById("pdfPage");
+    const canvas = document.getElementById("annotationCanvas");
+    const ctx = canvas.getContext("2d");
+    const status = document.getElementById("pdfStatus");
+    const wrap = document.getElementById("canvasWrap");
+
+    const buttons = {
+        text: document.getElementById("textTool"),
+        highlight: document.getElementById("highlightTool"),
+        draw: document.getElementById("drawTool")
+    };
+
+    function message(text) {
+        status.textContent = text;
+    }
+
+    function setTool(tool) {
+        activeTool = activeTool === tool ? null : tool;
+        Object.entries(buttons).forEach(([name, button]) => {
+            button.classList.toggle("active", activeTool === name);
+        });
+        canvas.style.cursor = activeTool ? "crosshair" : "default";
+        message(activeTool
+            ? `${activeTool} tool selected. Click or drag on the page.`
+            : "Select an editing tool.");
+    }
+
+    function resizeCanvas() {
+        const rect = image.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+
+        const oldWidth = canvas.width;
+        const oldHeight = canvas.height;
+
+        canvas.width = Math.round(rect.width);
+        canvas.height = Math.round(rect.height);
+
+        redraw();
+    }
+
+    function drawPending() {
+        const w = canvas.width;
+        const h = canvas.height;
+
+        for (const item of pending.filter(x => x.page === currentPage)) {
+            if (item.type === "text") {
+                ctx.fillStyle = "#000000";
+                ctx.font = `${item.font_size}px Arial`;
+                ctx.fillText(item.text, item.x * w, item.y * h);
+            } else if (item.type === "highlight") {
+                ctx.fillStyle = "rgba(255, 230, 0, 0.35)";
+                ctx.fillRect(item.x * w, item.y * h, item.width * w, item.height * h);
+            } else if (item.type === "draw") {
+                ctx.strokeStyle = "#19b8ff";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                item.points.forEach((p, index) => {
+                    if (index === 0) ctx.moveTo(p[0] * w, p[1] * h);
+                    else ctx.lineTo(p[0] * w, p[1] * h);
+                });
+                ctx.stroke();
+            }
+        }
+    }
+
+    function redraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawPending();
+    }
+
+    function loadPage() {
+        message("Loading page...");
+        image.onload = () => {
+            resizeCanvas();
+            document.getElementById("pageIndicator").textContent =
+                `Page ${currentPage + 1} / ${pageCount}`;
+            message("Page loaded.");
+        };
+        image.onerror = () => message("Unable to load PDF page.");
+        image.src = `/documents/pdf-page/${documentId}/${currentPage}?v=${Date.now()}`;
+    }
+
+    function position(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+            y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
+        };
+    }
+
+    canvas.addEventListener("pointerdown", event => {
+        if (!activeTool) return;
+        event.preventDefault();
+        canvas.setPointerCapture(event.pointerId);
+        drawing = true;
+        startPoint = position(event);
+        currentPoints = [startPoint];
+    });
+
+    canvas.addEventListener("pointermove", event => {
+        if (!drawing || activeTool !== "draw") return;
+        currentPoints.push(position(event));
+        redraw();
+        ctx.strokeStyle = "#19b8ff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        currentPoints.forEach((p, i) => {
+            if (i === 0) ctx.moveTo(p.x * canvas.width, p.y * canvas.height);
+            else ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
+        });
+        ctx.stroke();
+    });
+
+    canvas.addEventListener("pointerup", event => {
+        if (!drawing) return;
+        drawing = false;
+        const end = position(event);
+
+        if (activeTool === "text") {
+            const text = prompt("Enter text to add to this PDF:");
+            if (text && text.trim()) {
+                pending.push({
+                    type: "text",
+                    page: currentPage,
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    text: text.trim(),
+                    font_size: 12
+                });
+            }
+        } else if (activeTool === "highlight") {
+            const x = Math.min(startPoint.x, end.x);
+            const y = Math.min(startPoint.y, end.y);
+            const width = Math.abs(end.x - startPoint.x);
+            const height = Math.abs(end.y - startPoint.y);
+            if (width > 0.005 && height > 0.005) {
+                pending.push({
+                    type: "highlight",
+                    page: currentPage,
+                    x, y, width, height
+                });
+            }
+        } else if (activeTool === "draw" && currentPoints.length >= 2) {
+            pending.push({
+                type: "draw",
+                page: currentPage,
+                points: currentPoints.map(p => [p.x, p.y])
+            });
+        }
+
+        currentPoints = [];
+        redraw();
+    });
+
+    document.getElementById("previousPage").addEventListener("click", () => {
+        if (currentPage > 0) {
+            currentPage--;
+            loadPage();
+        }
+    });
+
+    document.getElementById("nextPage").addEventListener("click", () => {
+        if (currentPage < pageCount - 1) {
+            currentPage++;
+            loadPage();
+        }
+    });
+
+    buttons.text.addEventListener("click", () => setTool("text"));
+    buttons.highlight.addEventListener("click", () => setTool("highlight"));
+    buttons.draw.addEventListener("click", () => setTool("draw"));
+
+    document.getElementById("undoTool").addEventListener("click", () => {
+        if (pending.length) {
+            pending.pop();
+            redraw();
+            message("Last unsaved annotation removed.");
+        }
+    });
+
+    document.getElementById("savePdf").addEventListener("click", async () => {
+        if (!pending.length) {
+            message("There are no new annotations to save.");
+            return;
+        }
+
+        const saveButton = document.getElementById("savePdf");
+        saveButton.disabled = true;
+        message("Saving PDF annotations...");
+
+        try {
+            const response = await fetch(
+                `/documents/edit-pdf/${documentId}/save`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": {{ csrf_token() | tojson }}
+                    },
+                    body: JSON.stringify({
+                        version,
+                        operations: pending
+                    })
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "PDF save failed.");
+            }
+
+            version = result.version;
+            pending = [];
+            loadPage();
+            message(result.message || "PDF saved successfully.");
+        } catch (error) {
+            message(error.message || "Unable to save PDF.");
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+    loadPage();
+})();
+</script>
+</body>
+</html>

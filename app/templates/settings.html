@@ -91,6 +91,59 @@
             .tv-settings-grid { grid-template-columns: 1fr; }
             .tv-settings-card { padding: 21px; }
         }
+
+        /* TrustVault Settings heading polish */
+        @keyframes tvSettingsHeadingEnter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tvSettingsCardEnter {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tv-dashboard .tv-history-header h1 {
+            font-size: clamp(1.45rem, 3vw, 2.1rem);
+            line-height: 1.2;
+            letter-spacing: -.025em;
+            animation: tvSettingsHeadingEnter .65s ease both;
+        }
+        .tv-settings-card {
+            animation: tvSettingsCardEnter .65s ease both;
+        }
+        .tv-settings-card:nth-child(2) {
+            animation-delay: .12s;
+        }
+        .tv-settings-card h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+            line-height: 1.35;
+        }
+        .tv-settings-card h2::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 2px;
+            background: #55c9ff;
+            box-shadow: 0 0 12px rgba(85,201,255,.45);
+        }
+        @media(max-width:520px) {
+            .tv-dashboard .tv-history-header h1 {
+                font-size: clamp(1.35rem, 6vw, 1.7rem);
+            }
+            .tv-settings-card h2 {
+                font-size: 1.05rem;
+            }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .tv-dashboard .tv-history-header h1,
+            .tv-settings-card {
+                animation: none !important;
+            }
+        }
+
     </style>
 </head>
 <body class="tv-dashboard">
@@ -112,18 +165,18 @@
         </a>
         <div class="tv-sidebar-caption">WORKSPACE</div>
         <nav class="tv-sidebar-nav" aria-label="Main navigation">
-            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><span>Dashboard</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 3l9 7v10h-6v-7H9v7H3z"/></svg><span>Dashboard</span></a>
             {% if current_user.role in ["Document Owner", "Administrator"] %}
-            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><span>My Documents</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><span>Owner Workspace</span></a>
+            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"/></svg><span>My Documents</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z M12 12v9"/></svg><span>Owner Workspace</span></a>
             {% endif %}
             {% if current_user.role == "Administrator" %}
-            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><span>Admin Console</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 14.5 9h6l-5 3.8 2 6.2-5.5-3.8L6.5 19l2-6.2-5-3.8h6z"/></svg><span>Admin Console</span></a>
             {% endif %}
-            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><span>Shared With Me</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><span>Activity Logs</span></a>
-            <a class="tv-side-link" href="{{ url_for('auth.profile') }}"><span>My Profile</span></a>
-            <a class="tv-side-link active" href="{{ url_for('auth.settings') }}"><span>Settings</span></a>
+            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h12m-4-4 4 4-4 4M16 17H4m4-4-4 4 4 4"/></svg><span>Shared With Me</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.my_history') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Activity Logs</span></a>
+            <a class="tv-side-link" href="{{ url_for('auth.profile') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0 M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><span>My Profile</span></a>
+            <a class="tv-side-link active" href="{{ url_for('auth.settings') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M19 13l2 2-2 3-3-1-2 1v3h-4v-3l-2-1-3 1-2-3 2-2v-2l-2-2 2-3 3 1 2-1V3h4v3l2 1 3-1 2 3-2 2z"/></svg><span>Settings</span></a>
         </nav>
         <div class="tv-sidebar-bottom">
             <div class="tv-sidebar-security">
@@ -134,7 +187,7 @@
             <div class="tv-sidebar-divider"></div>
             <form method="POST" action="{{ url_for('auth.logout') }}" style="display:contents">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="tv-side-link tv-logout-link"><span>Logout</span></button>
+                <button type="submit" class="tv-side-link tv-logout-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3 M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span>Logout</span></button>
             </form>
         </div>
     </aside>
@@ -218,23 +271,34 @@
 </div>
 
 <script>
-(function () {
+(() => {
     const toggle = document.getElementById("tvMenuToggle");
     const sidebar = document.getElementById("tvSidebar");
     const overlay = document.getElementById("tvSidebarOverlay");
+
     if (!toggle || !sidebar || !overlay) return;
 
-    function closeMenu() {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
+    function setMenu(open) {
+        sidebar.classList.toggle("tv-sidebar-open", open);
+        overlay.classList.toggle("tv-overlay-visible", open);
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+        document.body.classList.toggle("tv-menu-active", open);
     }
-    toggle.addEventListener("click", function () {
-        const isOpen = sidebar.classList.toggle("open");
-        overlay.classList.toggle("open", isOpen);
-        toggle.setAttribute("aria-expanded", String(isOpen));
+
+    toggle.addEventListener("click", () => {
+        setMenu(!sidebar.classList.contains("tv-sidebar-open"));
     });
-    overlay.addEventListener("click", closeMenu);
+
+    overlay.addEventListener("click", () => setMenu(false));
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") setMenu(false);
+    });
+
+    sidebar.querySelectorAll("a").forEach(link => {
+        link.addEventListener("click", () => setMenu(false));
+    });
 })();
 </script>
 </body>

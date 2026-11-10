@@ -39,41 +39,52 @@
                 <span>Dashboard</span>
             </a>
 
-            {% if current_user.role in ["Document Owner", "Administrator"] %}
-            <a class="tv-side-link" href="{{ url_for('documents.my_documents') }}">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <path d="M14 2v6h6M8 13h8M8 17h8"/>
-                </svg>
-                <span>My Documents</span>
-            </a>
-            {% endif %}
+            <details class="tv-documents-menu" open>
+                <summary class="tv-side-link tv-documents-toggle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/>
+                    </svg>
+                    <span>My Documents</span>
+                    <svg class="tv-submenu-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </summary>
+
+                <div class="tv-documents-submenu">
+                    {% if current_user.role in ["Document Owner", "Administrator"] %}
+                    <a class="tv-submenu-link" href="{{ url_for('documents.my_documents') }}">
+                        <span>My Documents</span>
+                    </a>
+                    {% endif %}
+
+                    <a class="tv-submenu-link" href="{{ url_for('documents.shared_with_me') }}">
+                        <span>Shared With Me</span>
+                    </a>
+
+                    {% if current_user.role in ["Document Owner", "Administrator"] %}
+                    <a class="tv-submenu-link" href="{{ url_for('documents.shared_by_me') }}">
+                        <span>Shared by Me</span>
+                    </a>
+                    {% endif %}
+
+                </div>
+            </details>
 
             {% if current_user.role in ["Document Owner", "Administrator"] %}
             <a class="tv-side-link" href="{{ url_for('auth.owner_dashboard') }}">
-                <span>Owner Workspace</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z M12 12v9"/></svg><span>Owner Workspace</span>
             </a>
             {% endif %}
 
             {% if current_user.role == "Administrator" %}
             <a class="tv-side-link" href="{{ url_for('auth.admin_dashboard') }}">
-                <span>Admin Console</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 14.5 9h6l-5 3.8 2 6.2-5.5-3.8L6.5 19l2-6.2-5-3.8h6z"/></svg><span>Admin Console</span>
             </a>
             {% endif %}
 
-            <a class="tv-side-link" href="{{ url_for('documents.shared_with_me') }}">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="18" cy="5" r="3"/>
-                    <circle cx="6" cy="12" r="3"/>
-                    <circle cx="18" cy="19" r="3"/>
-                    <path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/>
-                </svg>
-                <span>Shared With Me</span>
-            </a>
-
             <a class="tv-side-link" href="{{ url_for('auth.my_history') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/>
+                    <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/>
                     <path d="M3 3v5h5M12 7v5l3 2"/>
                 </svg>
                 <span>Activity Logs</span>
@@ -142,7 +153,7 @@
                         <p>Your documents, your permissions, your control. Welcome to your secure workspace.</p>
                         <div class="tv-welcome-actions">
                             {% if current_user.role in ["Document Owner", "Administrator"] %}
-                            <a class="tv-primary-button" href="{{ url_for('documents.my_documents') }}">Explore Documents</a>
+                            <a class="tv-primary-button" href="{{ url_for('documents.shared_by_me') }}">Explore Documents</a>
                             {% else %}
                             <a class="tv-primary-button" href="{{ url_for('documents.shared_with_me') }}">Explore Documents</a>
                             {% endif %}

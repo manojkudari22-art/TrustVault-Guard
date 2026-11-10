@@ -1,4 +1,4 @@
-﻿import os
+import os
 from datetime import timezone
 
 from flask import Flask
@@ -48,6 +48,8 @@ def create_app(test_config=None):
     from app.documents.models import Document
     from app.audit.models import AuditLog
     from app.documents.permissions import DocumentPermission
+    from app.documents.edit_requests import DocumentEditRequest
+    from app.documents.editor_sessions import DocumentEditorSession
 
     @login_manager.user_loader
     def load_user(user_id):
